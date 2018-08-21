@@ -9,6 +9,7 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 
@@ -16,17 +17,20 @@ import mmcorej.CMMCore;
 import net.miginfocom.swing.MigLayout;
 import org.micromanager.Studio;
 import org.micromanager.api.ScriptInterface;
+import org.micromanager.data.Datastore;
+import org.micromanager.data.Image;
 import org.micromanager.internal.utils.MMFrame;
 
 public class TestPluginFrame extends MMFrame {
     
     private Studio studio_;
     private JTextField userText_;
+    private JLabel imageInfoLabel_;
     
     public TestPluginFrame(Studio studio) {
         super("Example Plugin GUI");
         studio_ = studio;
-        setLayout(new MigLayout("fill, insets 2, gap 2, flowx"));
+        setLayout(new MigLayout("fill, insets 5, gap 5, flowx"));
 
         JLabel title = new JLabel("I'm an example plugin!");
         title.setFont(new Font("Arial", Font.BOLD, 14));
@@ -50,7 +54,25 @@ public class TestPluginFrame extends MMFrame {
             }
         });
         add(alertButton, "wrap");
-
+        
+        imageInfoLabel_ = new JLabel();
+        add(imageInfoLabel_, "growx, split, span");
+        JButton snapButton = new JButton("Snap Image");
+        snapButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            // Multiple images are returned only if there are multiple
+            // cameras. We only care about the first image.
+            List<Image> images = studio_.displays().getCurrentWindow().getDisplayedImages();
+            Image aimage = images.get(0);
+            Datastore store = studio_.displays().show(aimage);
+            }
+        });
+        add(snapButton, "wrap");
+        
+        //retrieve the topmost DisplayWindow and then extract the Datastore that 
+        //contains the data that the DisplayWindow presents
+        
         pack();
     }
 
