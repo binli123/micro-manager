@@ -6,6 +6,8 @@
 package org.micromanager.testplugin;
 
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.text.NumberFormat;
 import java.util.prefs.Preferences;
 import javax.swing.*;
@@ -36,6 +38,19 @@ public class TestPluginFrame extends MMFrame {
         userText_.setText("Something happened!");
         add(userText_);
         
+        JButton alertButton = new JButton("Alert me!");
+        // Clicking on this button will invoke the ActionListener, which in turn
+        // will show a text alert to the user.
+        alertButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            // Use the contents of userText_ as the text.
+                studio_.alerts().postAlert("Example Alert!",
+                TestPluginFrame.class, userText_.getText());
+            }
+        });
+        add(alertButton, "wrap");
+
         pack();
     }
 
