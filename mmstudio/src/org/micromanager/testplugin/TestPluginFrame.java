@@ -20,6 +20,10 @@ import org.micromanager.Studio;
 import org.micromanager.api.ScriptInterface;
 import org.micromanager.data.Datastore;
 import org.micromanager.data.Image;
+import org.micromanager.data.Coords;
+import org.micromanager.display.DisplayWindow;
+import mmcorej.TaggedImage;
+
 import org.micromanager.internal.utils.MMFrame;
 import org.micromanager.utils.FileDialogs;
 import org.micromanager.utils.MMDialog;
@@ -53,7 +57,7 @@ public class TestPluginFrame extends MMDialog {
         // Display the path to the low resolution image
         add(new JLabel("Low resolution image: "));
         userText_ = new JTextField(30);
-        userText_.setText("Something happened!");
+        userText_.setText(LOWRESIMAGENAME);
         add(userText_);
         
         // Create load button for the low resolution image
@@ -83,9 +87,17 @@ public class TestPluginFrame extends MMDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
             // Display the selected image
-            List<Image> images = studio_.displays().getCurrentWindow().getDisplayedImages();
-            Image aimage = images.get(0);
-            Datastore store = studio_.displays().show(aimage);
+                ImageAnnotation ia = new ImageAnnotation();
+                 try {
+                    ia.showLowResImage(lowResFileName_);
+                } catch (MMException ex) {
+                    ReportingUtils.showError(ex, "Failed to open low resolution image");
+                }
+                 
+                
+                List<Image> images = studio_.displays().getCurrentWindow().getDisplayedImages();
+                Image aimage = images.get(0);
+                Datastore store = studio_.displays().show(aimage);  
             }
         });
         add(annotateButton, "wrap");
