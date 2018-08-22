@@ -8,6 +8,7 @@ package org.micromanager.testplugin;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -20,60 +21,89 @@ import org.micromanager.api.ScriptInterface;
 import org.micromanager.data.Datastore;
 import org.micromanager.data.Image;
 import org.micromanager.internal.utils.MMFrame;
+import org.micromanager.utils.FileDialogs;
+import org.micromanager.utils.MMDialog;
+import org.micromanager.utils.MMException;
+import org.micromanager.utils.ReportingUtils;
 
-public class TestPluginFrame extends MMFrame {
+public class TestPluginFrame extends MMDialog {
     
     private Studio studio_;
     private JTextField userText_;
     private JLabel imageInfoLabel_;
+    private MMDialog mscPluginWindow;
+    private final Preferences prefs_;
+    
+    private static final String LOWRESIMAGENAME = "Low resolution image";
+    private static final String EMPTY_FILENAME_INDICATOR = "None";
+    private String lowResFileName_;
+    private final String[] IMAGESUFFIXES = {"tif", "tiff", "jpg", "png"};
+    private static File lowResImage;
     
     public TestPluginFrame(Studio studio) {
         super("Example Plugin GUI");
         studio_ = studio;
-        setLayout(new MigLayout("fill, insets 5, gap 5, flowx"));
+        setLayout(new MigLayout("fill, insets 2, gap 2, flowx"));
+        prefs_ = this.getPrefsNode();
 
-        JLabel title = new JLabel("I'm an example plugin!");
+        JLabel title = new JLabel("ROIs mapping");
         title.setFont(new Font("Arial", Font.BOLD, 14));
         add(title, "span, alignx center, wrap");
         
-        // Create a text field for the user to customize their alerts.
-        add(new JLabel("Alert text: "));
+        // Display the path to the low resolution image
+        add(new JLabel("Low resolution image: "));
         userText_ = new JTextField(30);
         userText_.setText("Something happened!");
         add(userText_);
         
-        JButton alertButton = new JButton("Alert me!");
+        // Create load button for the low resolution image
+        JButton lowResButton = new JButton(" ... ");
         // Clicking on this button will invoke the ActionListener, which in turn
-        // will show a text alert to the user.
-        alertButton.addActionListener(new ActionListener() {
+        // will ask the user to select a image.
+        lowResButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-            // Use the contents of userText_ as the text.
-                studio_.alerts().postAlert("Example Alert!",
-                TestPluginFrame.class, userText_.getText());
+            // 
+                lowResImage = FileDialogs.openFile(mscPluginWindow, 
+                        "Low resolution image", 
+                        new FileDialogs.FileType("MMAcq", "Low resolution image", 
+                                lowResFileName_, true, IMAGESUFFIXES));
+                if (lowResImage != null){
+                    processLowResImage(lowResImage.getAbsolutePath());
+                    userText_.setText(lowResFileName_);
+                }
             }
         });
-        add(alertButton, "wrap");
+        add(lowResButton, "wrap");
         
         imageInfoLabel_ = new JLabel();
         add(imageInfoLabel_, "growx, split, span");
-        JButton snapButton = new JButton("Snap Image");
-        snapButton.addActionListener(new ActionListener() {
+        JButton annotateButton = new JButton("Snap Image");
+        annotateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-            // Multiple images are returned only if there are multiple
-            // cameras. We only care about the first image.
+            // Display the selected image
             List<Image> images = studio_.displays().getCurrentWindow().getDisplayedImages();
             Image aimage = images.get(0);
             Datastore store = studio_.displays().show(aimage);
             }
         });
-        add(snapButton, "wrap");
+        add(annotateButton, "wrap");
         
         //retrieve the topmost DisplayWindow and then extract the Datastore that 
         //contains the data that the DisplayWindow presents
         
         pack();
     }
-
+    
+    public String processLowResImage(String fileName) {
+        if (EMPTY_FILENAME_INDICATOR.equals(fileName)) {
+            fileName = "";
+        }
+        lowResFileName_ = fileName;
+        prefs_.put(LOWRESIMAGENAME, lowResFileName_);
+        return fileName;
+    }  
+    
 }
+
