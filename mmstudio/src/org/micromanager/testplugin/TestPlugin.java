@@ -15,7 +15,6 @@ import org.scijava.plugin.SciJavaPlugin;
 @Plugin(type = MenuPlugin.class)
 public class TestPlugin implements SciJavaPlugin, MenuPlugin {
    private Studio studio_;
-   private MMStudio mmstudio_;
    private TestPluginFrame frame_;
 
    /**

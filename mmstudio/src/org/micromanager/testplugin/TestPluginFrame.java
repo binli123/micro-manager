@@ -12,6 +12,8 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 
@@ -37,8 +39,6 @@ public class TestPluginFrame extends MMDialog {
     private Studio studio_;
     private JTextField userText_;
     private JTextField coordinatesText_;
-    private JLabel loadImageLabel_;
-    private JLabel annoteImageLabel_;
     private MMDialog mscPluginWindow;
     private final Preferences prefs_;
     
@@ -48,6 +48,7 @@ public class TestPluginFrame extends MMDialog {
     private final String[] IMAGESUFFIXES = {"tif", "tiff", "jpg", "png"};
     private static File lowResImage;
     private int[] roiCoordinates_ = {0, 0, 0, 0};
+    private Rectangle getCoordinates;
     private static String ROICOORDINATES = "(0, 0) (0, 0)";
     
     public TestPluginFrame(Studio studio) {
@@ -118,6 +119,7 @@ public class TestPluginFrame extends MMDialog {
                 //Set ROI 
                 //Record the coordinates of ROI
                 try {
+                    getCoordinates = studio_.getCMMCore().getROI();
                     roiCoordinates_[0] = ia.getAnnotationROI().x;
                     roiCoordinates_[1] = ia.getAnnotationROI().y;
                     roiCoordinates_[2] = ia.getAnnotationROI().x + 
@@ -126,6 +128,8 @@ public class TestPluginFrame extends MMDialog {
                             ia.getAnnotationROI().height;;
                 } catch (MMScriptException ex) {
                     //ReportingUtils.showError(ex, "Failed to annotate image");
+                } catch (Exception ex) {
+                    Logger.getLogger(TestPluginFrame.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 ROICOORDINATES = String.format("(%d, %d) (%d, %d)", 
                         roiCoordinates_[0], roiCoordinates_[1], 
@@ -150,6 +154,6 @@ public class TestPluginFrame extends MMDialog {
         prefs_.put(LOWRESIMAGENAME, lowResFileName_);
         return fileName;
     }  
-    
+ 
 }
 
