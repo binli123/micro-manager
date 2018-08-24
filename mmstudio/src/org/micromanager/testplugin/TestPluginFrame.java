@@ -6,6 +6,7 @@
 package org.micromanager.testplugin;
 
 import java.awt.Font;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -28,13 +29,16 @@ import org.micromanager.internal.utils.MMFrame;
 import org.micromanager.utils.FileDialogs;
 import org.micromanager.utils.MMDialog;
 import org.micromanager.utils.MMException;
+import org.micromanager.utils.MMScriptException;
 import org.micromanager.utils.ReportingUtils;
 
 public class TestPluginFrame extends MMDialog {
     
     private Studio studio_;
     private JTextField userText_;
-    private JLabel imageInfoLabel_;
+    private JTextField coordinatesText_;
+    private JLabel loadImageLabel_;
+    private JLabel annoteImageLabel_;
     private MMDialog mscPluginWindow;
     private final Preferences prefs_;
     
@@ -43,23 +47,26 @@ public class TestPluginFrame extends MMDialog {
     private String lowResFileName_;
     private final String[] IMAGESUFFIXES = {"tif", "tiff", "jpg", "png"};
     private static File lowResImage;
+    private int[] roiCoordinates_ = {0, 0, 0, 0};
+    private static String ROICOORDINATES = "(0, 0) (0, 0)";
     
     public TestPluginFrame(Studio studio) {
         super("Example Plugin GUI");
         studio_ = studio;
         setLayout(new MigLayout("fill, insets 2, gap 2, flowx"));
         prefs_ = this.getPrefsNode();
+        ImageAnnotation ia = new ImageAnnotation(studio_);
 
         JLabel title = new JLabel("ROIs mapping");
         title.setFont(new Font("Arial", Font.BOLD, 14));
         add(title, "span, alignx center, wrap");
         
         // Display the path to the low resolution image
-        add(new JLabel("Low resolution image: "));
+        add(new JLabel("Image path: "));
         userText_ = new JTextField(30);
         userText_.setText(LOWRESIMAGENAME);
-        add(userText_);
-        
+        add(userText_, "newline");
+           
         // Create load button for the low resolution image
         JButton lowResButton = new JButton(" ... ");
         // Clicking on this button will invoke the ActionListener, which in turn
@@ -71,36 +78,63 @@ public class TestPluginFrame extends MMDialog {
                 lowResImage = FileDialogs.openFile(mscPluginWindow, 
                         "Low resolution image", 
                         new FileDialogs.FileType("MMAcq", "Low resolution image", 
-                                lowResFileName_, true, IMAGESUFFIXES));
+                        lowResFileName_, true, IMAGESUFFIXES));
                 if (lowResImage != null){
                     processLowResImage(lowResImage.getAbsolutePath());
                     userText_.setText(lowResFileName_);
                 }
             }
         });
-        add(lowResButton, "wrap");
+        add(lowResButton);
         
-        imageInfoLabel_ = new JLabel();
-        add(imageInfoLabel_, "growx, split, span");
-        JButton annotateButton = new JButton("Snap Image");
-        annotateButton.addActionListener(new ActionListener() {
+
+        //loadImageLabel_ = new JLabel();
+        //add(loadImageLabel_);
+        JButton loadImageButton = new JButton("Display Image");
+        loadImageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // Display the selected image
-                ImageAnnotation ia = new ImageAnnotation(studio_);
                  try {
                     ia.showLowResImage(lowResImage);
                 } catch (MMException ex) {
                     ReportingUtils.showError(ex, "Failed to open low resolution image");
                 }
-                 
-                
-                /*List<Image> images = studio_.displays().getCurrentWindow().getDisplayedImages();
-                Image aimage = images.get(0);
-                Datastore store = studio_.displays().show(aimage);*/  
             }
         });
-        add(annotateButton, "wrap");
+        add(loadImageButton, "wrap");
+        
+        add(new JLabel("ROI Coordinates: "));
+        coordinatesText_ = new JTextField(30);
+        coordinatesText_.setText(ROICOORDINATES);
+        add(coordinatesText_, "newline");
+        
+        //annoteImageLabel_ = new JLabel();
+        //add(annoteImageLabel_, "growx, split, span");
+        JButton annotateButton = new JButton("Annotate Image");
+        annotateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //Set ROI 
+                //Record the coordinates of ROI
+                try {
+                    roiCoordinates_[0] = ia.getAnnotationROI().x;
+                    roiCoordinates_[1] = ia.getAnnotationROI().y;
+                    roiCoordinates_[2] = ia.getAnnotationROI().x + 
+                            ia.getAnnotationROI().width;
+                    roiCoordinates_[3] = ia.getAnnotationROI().y + 
+                            ia.getAnnotationROI().height;;
+                } catch (MMScriptException ex) {
+                    //ReportingUtils.showError(ex, "Failed to annotate image");
+                }
+                ROICOORDINATES = String.format("(%d, %d) (%d, %d)", 
+                        roiCoordinates_[0], roiCoordinates_[1], 
+                        roiCoordinates_[2], roiCoordinates_[3]);
+                coordinatesText_.setText(ROICOORDINATES);
+            }
+        });
+        add(annotateButton, "wrap, span 2");
+        
         
         //retrieve the topmost DisplayWindow and then extract the Datastore that 
         //contains the data that the DisplayWindow presents

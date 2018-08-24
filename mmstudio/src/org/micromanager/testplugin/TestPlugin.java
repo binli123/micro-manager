@@ -5,6 +5,7 @@
  */
 package org.micromanager.testplugin;
 
+import org.micromanager.MMStudio;
 import org.micromanager.MenuPlugin;
 import org.micromanager.Studio;
 
@@ -14,6 +15,7 @@ import org.scijava.plugin.SciJavaPlugin;
 @Plugin(type = MenuPlugin.class)
 public class TestPlugin implements SciJavaPlugin, MenuPlugin {
    private Studio studio_;
+   private MMStudio mmstudio_;
    private TestPluginFrame frame_;
 
    /**
