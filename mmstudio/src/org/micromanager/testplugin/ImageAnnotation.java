@@ -16,41 +16,32 @@ import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import ij.process.ShortProcessor;
 import java.awt.Rectangle;
+import java.io.File;
 import java.util.HashMap;
+import org.micromanager.Studio;
+import org.micromanager.data.Datastore;
 
 import org.micromanager.utils.ImageUtils;
 import org.micromanager.utils.MMException;
 import org.micromanager.utils.ReportingUtils;
 
 public class ImageAnnotation {
-    private final HashMap<String, ImageInfo> lowRes_;
-    private final String BASEIMAGE = "base";
+    private final Studio app_;
+    private long frameLengthMs = 100;
+    private File tiffFile;
+    private Datastore store;
+    private SortedCoordsList coords_list;
     
-    public ImageAnnotation() {
-        lowRes_ = new HashMap<String, ImageInfo>();
+    public ImageAnnotation(Studio studio_) {
+        app_ = studio_;
     }
     
-    public void showLowResImage(String file) throws MMException {
-        lowRes_.clear();
-        if (!file.equals("")) {
-         ij.io.Opener opener = new ij.io.Opener();
-         ImagePlus ip = opener.openImage(file);
-         if (ip == null) {
-            throw new MMException("Failed to open file: " + file);
-         }
-         ImageInfo bg = new ImageInfo(ip); 
-         lowRes_.put(BASEIMAGE, bg);
-         lowRes_.put(makeKey(1, bg.getOriginalRoi()), bg);
-        }
+    public void showLowResImage(final File file) throws MMException {
+        final TiffParser parser = new TiffParser(app_, frameLengthMs);
+        parser.loadScrubbedData(file);
+        store = parser.getDatastore();
+        coords_list = parser.getCoordsList();
+        tiffFile = file;
+        store = app_.displays().show(parser.getImage());
     }
-    
-    private String makeKey(int binning, Rectangle roi) {
-    if (binning == 1 && (roi == null || roi.width == 0)) {
-         return BASEIMAGE;
-    }
-        String key = binning + "-" + roi.x + "-" + roi.y + "-" + roi.width + "-" 
-                + roi.height;
-         return key;
-   }
-    
 }

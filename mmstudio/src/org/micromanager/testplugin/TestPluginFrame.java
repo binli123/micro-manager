@@ -86,18 +86,18 @@ public class TestPluginFrame extends MMDialog {
         annotateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-            // Display the selected image
-                ImageAnnotation ia = new ImageAnnotation();
+                // Display the selected image
+                ImageAnnotation ia = new ImageAnnotation(studio_);
                  try {
-                    ia.showLowResImage(lowResFileName_);
+                    ia.showLowResImage(lowResImage);
                 } catch (MMException ex) {
                     ReportingUtils.showError(ex, "Failed to open low resolution image");
                 }
                  
                 
-                List<Image> images = studio_.displays().getCurrentWindow().getDisplayedImages();
+                /*List<Image> images = studio_.displays().getCurrentWindow().getDisplayedImages();
                 Image aimage = images.get(0);
-                Datastore store = studio_.displays().show(aimage);  
+                Datastore store = studio_.displays().show(aimage);*/  
             }
         });
         add(annotateButton, "wrap");

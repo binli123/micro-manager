@@ -31,6 +31,11 @@ public class TiffParser {
     private SortedCoordsList coords_list;
     private Coords.CoordsBuilder c_builder;
     private Metadata.MetadataBuilder m_builder;
+    Image ramImage = null;
+    Coords coords; 
+    Metadata metadata;
+    ImagePlus win;
+    
 private long frameLengthMs;
     
     public TiffParser(Studio studio_, long frameLengthMs) {
@@ -43,7 +48,6 @@ private long frameLengthMs;
         // Open the tiff via ImageJ
         app_.logs().logMessage("Trying to open general tiff.");
         InputStream input_stream = new FileInputStream(file);
-        ImagePlus win;
         try {
             Opener o = new Opener ();
             win = o.openTiff(input_stream, "tiffParser");
@@ -60,24 +64,17 @@ private long frameLengthMs;
         int width = stack.getWidth();
         int height = stack.getHeight();
         int bytesPerPixel;
-        if(stack.getPixels(win.getSlice()) instanceof short[]) {
-            bytesPerPixel = 1;
-        } else {
-            throw new ArrayStoreException("Wrong image bit depth.");
-        }
-        
-        Image ram_image;
-        Coords coords; 
-        Metadata metadata;
+        bytesPerPixel = 1;
+       
         for (int i=1; i<=stack.getSize(); i++) {
             // get immutable types from builders
             coords = c_builder.build();
             metadata = m_builder.build();
             
-            ram_image = app_.data().createImage(stack.getPixels(i), width, height, bytesPerPixel, 1, coords, metadata);
+            ramImage = app_.data().createImage(stack.getPixels(i), width, height, bytesPerPixel, 1, coords, metadata);
             // put the image into new datastore
             try {
-                store.putImage(ram_image);
+                store.putImage(ramImage);
             } catch (DatastoreFrozenException ex) {
             } catch (DatastoreRewriteException ex) {
             } catch (IllegalArgumentException ex) {
@@ -94,6 +91,48 @@ private long frameLengthMs;
             }
         }
     }
+    
+    public final void loadScrubbedData(File file) {
+        /**
+         * Loads data from a .tiff file from disk, cleans  the Coords and
+         * Metadata information, and loads it up into a RAM datastore.
+         */
+        
+        app_.logs().logDebugMessage(String.format(
+            "Parsing .tiff file: %s", file.getAbsolutePath()));
+        
+        // Containers for cleaned up final data
+        store = app_.data().createRAMDatastore();
+        coords_list = new SortedCoordsList();
+        
+        // Get a coords builder, but scrap all coords info.
+        c_builder = app_.data().getCoordsBuilder();
+        c_builder.channel(0).stagePosition(0).time(0).z(0);
+        
+        // Get metadata from .tiff file, but scrub the position and other information
+        // which doesn't pertain to actual image.
+        
+        
+        Datastore disk_store = null;
+        try {
+            loadGeneralTiff(file);
+        } catch (Exception ex2) {
+        }
+        tiffFile_ = file;
+    }
+    
+    public Datastore getDatastore() {
+        return store;
+    } 
+    
+    public SortedCoordsList getCoordsList() {
+        return coords_list;
+    }
+    
+    public Image getImage(){
+        return ramImage;
+    }
+    
 }
 
 /*
