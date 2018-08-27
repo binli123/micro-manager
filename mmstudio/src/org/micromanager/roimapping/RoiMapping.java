@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.micromanager.testplugin;
+package org.micromanager.roimapping;
 
 import org.micromanager.MMStudio;
 import org.micromanager.MenuPlugin;
@@ -13,9 +13,9 @@ import org.scijava.plugin.Plugin;
 import org.scijava.plugin.SciJavaPlugin;
 
 @Plugin(type = MenuPlugin.class)
-public class TestPlugin implements SciJavaPlugin, MenuPlugin {
+public class RoiMapping implements SciJavaPlugin, MenuPlugin {
    private Studio studio_;
-   private TestPluginFrame frame_;
+   private RoiMappingFrame frame_;
 
    /**
     * This method receives the Studio object, which is the gateway to the
@@ -38,7 +38,7 @@ public class TestPlugin implements SciJavaPlugin, MenuPlugin {
    public void onPluginSelected() {
       if (frame_ == null) {
          // We have never before shown our GUI, so now we need to create it.
-         frame_ = new TestPluginFrame(studio_);
+         frame_ = new RoiMappingFrame(studio_);
       }
       frame_.setVisible(true);
    }
@@ -57,7 +57,7 @@ public class TestPlugin implements SciJavaPlugin, MenuPlugin {
     */
    @Override
    public String getName() {
-      return "Example plugin";
+      return "ROI Mapping";
    }
 
    @Override

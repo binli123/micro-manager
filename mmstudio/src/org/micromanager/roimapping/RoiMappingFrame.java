@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.micromanager.testplugin;
+package org.micromanager.roimapping;
 
 import java.awt.Font;
 import java.awt.Rectangle;
@@ -34,7 +34,7 @@ import org.micromanager.utils.MMException;
 import org.micromanager.utils.MMScriptException;
 import org.micromanager.utils.ReportingUtils;
 
-public class TestPluginFrame extends MMDialog {
+public class RoiMappingFrame extends MMDialog {
     
     private Studio studio_;
     private JTextField userText_;
@@ -51,7 +51,7 @@ public class TestPluginFrame extends MMDialog {
     private Rectangle getCoordinates;
     private static String ROICOORDINATES = "(0, 0) (0, 0)";
     
-    public TestPluginFrame(Studio studio) {
+    public RoiMappingFrame(Studio studio) {
         super("Example Plugin GUI");
         studio_ = studio;
         setLayout(new MigLayout("fill, insets 2, gap 2, flowx"));
@@ -129,7 +129,7 @@ public class TestPluginFrame extends MMDialog {
                 } catch (MMScriptException ex) {
                     //ReportingUtils.showError(ex, "Failed to annotate image");
                 } catch (Exception ex) {
-                    Logger.getLogger(TestPluginFrame.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 ROICOORDINATES = String.format("(%d, %d) (%d, %d)", 
                         roiCoordinates_[0], roiCoordinates_[1], 
