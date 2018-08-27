@@ -57,6 +57,7 @@ public class RoiMappingFrame extends MMDialog {
         setLayout(new MigLayout("fill, insets 2, gap 2, flowx"));
         prefs_ = this.getPrefsNode();
         ImageAnnotation ia = new ImageAnnotation(studio_);
+        SnapKernel sk = new SnapKernel(studio_);
 
         JLabel title = new JLabel("ROIs mapping");
         title.setFont(new Font("Arial", Font.BOLD, 14));
@@ -71,7 +72,7 @@ public class RoiMappingFrame extends MMDialog {
         // Create load button for the low resolution image
         JButton lowResButton = new JButton(" ... ");
         // Clicking on this button will invoke the ActionListener, which in turn
-        // will ask the user to select a image.
+        // will ask the user to select a image and then display it
         lowResButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -84,13 +85,16 @@ public class RoiMappingFrame extends MMDialog {
                     processLowResImage(lowResImage.getAbsolutePath());
                     userText_.setText(lowResFileName_);
                 }
+                try {
+                    ia.showLowResImage(lowResImage);
+                } catch (MMException ex) {
+                    ReportingUtils.showError(ex, "Failed to open low resolution image");
+                }
             }
         });
         add(lowResButton);
         
-
-        //loadImageLabel_ = new JLabel();
-        //add(loadImageLabel_);
+        // will dislpay the selected image
         JButton loadImageButton = new JButton("Display Image");
         loadImageButton.addActionListener(new ActionListener() {
             @Override
@@ -105,19 +109,19 @@ public class RoiMappingFrame extends MMDialog {
         });
         add(loadImageButton, "wrap");
         
+        // display the image coordinates of ROI
         add(new JLabel("ROI Coordinates: "));
         coordinatesText_ = new JTextField(30);
         coordinatesText_.setText(ROICOORDINATES);
         add(coordinatesText_, "newline");
         
-        //annoteImageLabel_ = new JLabel();
-        //add(annoteImageLabel_, "growx, split, span");
+        // will update image coordiates of a selected ROI
         JButton annotateButton = new JButton("Annotate Image");
         annotateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //Set ROI
-                //Record the coordinates of ROI
+                // Set ROI
+                // Record the coordinates of ROI
                 ia.setROI();
                 try {
                     roiCoordinates_[0] = ia.getAnnotationROI().x;
@@ -127,7 +131,7 @@ public class RoiMappingFrame extends MMDialog {
                     roiCoordinates_[3] = ia.getAnnotationROI().y + 
                             ia.getAnnotationROI().height;;
                 } catch (MMScriptException ex) {
-                    //ReportingUtils.showError(ex, "Failed to annotate image");
+                    // ReportingUtils.showError(ex, "Failed to annotate image");
                 } catch (Exception ex) {
                     Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -135,13 +139,25 @@ public class RoiMappingFrame extends MMDialog {
                         roiCoordinates_[0], roiCoordinates_[1], 
                         roiCoordinates_[2], roiCoordinates_[3]);
                 coordinatesText_.setText(ROICOORDINATES);
+               try {
+                   studio_.getCMMCore().clearROI();
+               } catch (Exception ex) {
+                   Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
+               }
             }
         });
         add(annotateButton, "wrap, span 2");
         
-        
-        //retrieve the topmost DisplayWindow and then extract the Datastore that 
-        //contains the data that the DisplayWindow presents
+        // will snap 3*3 kernel
+        JButton snapButton = new JButton("Snap Image");
+        snapButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // try snap an image
+                sk.snapImage();
+            }
+        });
+        add(snapButton, "Split 2");
         
         pack();
     }
