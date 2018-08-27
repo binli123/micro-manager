@@ -37,8 +37,6 @@ import org.micromanager.utils.ReportingUtils;
 public class RoiMappingFrame extends MMDialog {
     
     private Studio studio_;
-    private JTextField userText_;
-    private JTextField coordinatesText_;
     private MMDialog mscPluginWindow;
     private final Preferences prefs_;
     
@@ -47,9 +45,13 @@ public class RoiMappingFrame extends MMDialog {
     private String lowResFileName_;
     private final String[] IMAGESUFFIXES = {"tif", "tiff", "jpg", "png"};
     private static File lowResImage;
+    private JTextField userText_;
+    private JTextField coordinatesText_;
+    private JTextField stagePosText_;
     private int[] roiCoordinates_ = {0, 0, 0, 0};
-    private Rectangle getCoordinates;
     private static String ROICOORDINATES = "(0, 0) (0, 0)";
+    private static String KERNELCENTER = "(0, 0)";
+    private double[] stagePos = {0, 0, 0};
     
     public RoiMappingFrame(Studio studio) {
         super("Example Plugin GUI");
@@ -87,12 +89,12 @@ public class RoiMappingFrame extends MMDialog {
                 }
                 try {
                     ia.showLowResImage(lowResImage);
-                } catch (MMException ex) {
+                } catch(MMException ex) {
                     ReportingUtils.showError(ex, "Failed to open low resolution image");
                 }
             }
         });
-        add(lowResButton);
+        add(lowResButton, "Split 2");
         
         // will dislpay the selected image
         JButton loadImageButton = new JButton("Display Image");
@@ -130,9 +132,9 @@ public class RoiMappingFrame extends MMDialog {
                             ia.getAnnotationROI().width;
                     roiCoordinates_[3] = ia.getAnnotationROI().y + 
                             ia.getAnnotationROI().height;;
-                } catch (MMScriptException ex) {
+                } catch(MMScriptException ex) {
                     // ReportingUtils.showError(ex, "Failed to annotate image");
-                } catch (Exception ex) {
+                } catch(Exception ex) {
                     Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 ROICOORDINATES = String.format("(%d, %d) (%d, %d)", 
@@ -141,12 +143,23 @@ public class RoiMappingFrame extends MMDialog {
                 coordinatesText_.setText(ROICOORDINATES);
                try {
                    studio_.getCMMCore().clearROI();
-               } catch (Exception ex) {
+               } catch(Exception ex) {
                    Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
                }
             }
         });
-        add(annotateButton, "wrap, span 2");
+        add(annotateButton, "wrap");
+        
+        JButton centerKernelButton = new JButton("Center Kernel");
+        centerKernelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+               stagePos = sk.getStagePosition(); 
+               KERNELCENTER = String.format("(%.2f, %.2f)", stagePos[0], stagePos[1]);
+               stagePosText_.setText(KERNELCENTER);
+            }
+        });
+        add(centerKernelButton, "split 2");
         
         // will snap 3*3 kernel
         JButton snapButton = new JButton("Snap Image");
@@ -157,7 +170,12 @@ public class RoiMappingFrame extends MMDialog {
                 sk.snapImage();
             }
         });
-        add(snapButton, "Split 2");
+        add(snapButton, "wrap");
+        
+        add(new JLabel("Kernel center (X, Y): "), "split 2");
+        stagePosText_ = new JTextField(17);
+        stagePosText_.setText(KERNELCENTER);
+        add(stagePosText_);
         
         pack();
     }
