@@ -116,10 +116,10 @@ public class TestPluginFrame extends MMDialog {
         annotateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //Set ROI 
+                //Set ROI
                 //Record the coordinates of ROI
+                ia.setROI();
                 try {
-                    getCoordinates = studio_.getCMMCore().getROI();
                     roiCoordinates_[0] = ia.getAnnotationROI().x;
                     roiCoordinates_[1] = ia.getAnnotationROI().y;
                     roiCoordinates_[2] = ia.getAnnotationROI().x + 
