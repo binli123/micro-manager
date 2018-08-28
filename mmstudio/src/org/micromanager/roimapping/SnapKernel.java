@@ -11,11 +11,16 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mmcorej.TaggedImage;
+import org.micromanager.Album;
 import org.micromanager.StagePosition;
 import org.micromanager.Studio;
+import org.micromanager.data.Coords;
 import org.micromanager.data.Datastore;
 import org.micromanager.data.Image;
-import org.micromanager.imagedisplay.DisplayWindow;
+import org.micromanager.display.DisplayWindow;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
 
 public class SnapKernel {
     private final Studio app_;
@@ -35,24 +40,40 @@ public class SnapKernel {
     private long imHeight;
     private long imWidth;
     private double pixelSize;
+    private int size_;
     
     public SnapKernel(Studio studio_){
         app_ = studio_;
         stagePosList_ = new ArrayList<StagePosition>();
     }
     
-    public void snapImage() {
-        store  = app_.data().createRAMDatastore();
+    public Album snapImages(ArrayList<StagePosition> spal_) {
+        stagePosList_ = spal_;
+        Album album = app_.getAlbum();
+        Image image = null;
+        int numOfPos = stagePosList_.size();
+        for (int i = 0; i< numOfPos; i++) {
+            goToPosition(stagePosList_, i);
+            StagePosition sp = stagePosList_.get(i);
+            if (sp.numAxes == 2){
+                image = snapSingleImage();
+                album.addImage(image);      
+            }              
+        }
+        return album;
+    }
+    
+    public Image snapSingleImage() {
+        Image image = null;
         try {
             app_.getCMMCore().snapImage();
             TaggedImage tmp = app_.getCMMCore().getTaggedImage();
-            Image image = app_.data().convertTaggedImage(tmp);
-            image = image.copyAtCoords(image.getCoords().copy().channel(0).build());
-            store.putImage(image);
-            store = app_.displays().show(image);
+            image = app_.data().convertTaggedImage(tmp);
+            image = image.copyAtCoords(image.getCoords().copy().channel(0).build());            
         } catch (Exception ex){
             Logger.getLogger(SnapKernel.class.getName()).log(Level.SEVERE, null, ex);
-        }         
+        } 
+        return image;
     }
     
     public double[] getStagePosition() {
@@ -68,12 +89,12 @@ public class SnapKernel {
         return stagePos;    
     }
     
-    public void generatePositions(int Size) {
+    public ArrayList<StagePosition> generatePositions(int Size) {
         double imFieldHeight;
         double imFieldWidth;
         double[] start = {0, 0};
         double[] end = {0, 0};
-        Size = 3;
+        size_ = Size;
         imHeight = app_.getCMMCore().getImageHeight();
         imWidth = app_.getCMMCore().getImageWidth();
         pixelSize = app_.getCMMCore().getPixelSizeUm();
@@ -91,7 +112,8 @@ public class SnapKernel {
                         start[0] + j*imFieldHeight, start[1] + i*imFieldHeight,
                         zStage, stagePos[2]);
             }
-        }    
+        }
+        return stagePosList_;
     }
     
     public void addPosition(String xyStage, double x, double y, String zStage, double z) {
@@ -127,8 +149,77 @@ public class SnapKernel {
         }
     }
     
-    public void add(StagePosition sp) {
-        stagePosList_.add(sp);
+    public void getKernelImage(Album album_, int size_) {
+        store = album_.getDatastore();
+        byte rawdata[] = new byte[512*512]; 
+        byte kerneldata[][] = new byte[512*size_][512*size_]; // [row][col]
+        int numOfImg = store.getNumImages();
+        for (int i = 0; i<size_; i++) {
+            rawdata = getRawData(album_, i);
+            byte bididata[][] = monotoBidi(rawdata, 512, 512);
+            //addSubImageToRow(kerneldata,bididata);
+        }
+    }
+        
+    public byte[] getRawData(Album album_, int index_) {
+        Datastore store;
+        List<Image> images;
+        Image image = null;
+        byte rawdata[] = new byte[512*512];
+        store = album_.getDatastore();
+        Coords.CoordsBuilder builder = app_.data().getCoordsBuilder();
+        builder = builder.index(Coords.TIME, index_);
+        Coords coords = builder.build();
+        images = store.getImagesMatching(coords);
+        image = images.get(0);
+        rawdata = (byte[]) image.getRawPixels();
+        return rawdata;
+    }        
+   
+    public byte[][] addSubImageToRow(byte[][] array_, byte[][] subArray_, 
+            int xKey, int yKey) {
+        int arrayRow = yKey;
+        int arrayCol = xKey;
+        int subArrayRow = subArray_.length;
+        int subArrayCol = subArray_[0].length;
+        for (int i = 0; i < arrayRow; i++) {
+            int col = 0;
+            for (int j = arrayCol; j < arrayCol + subArrayCol; j++) {
+                array_[i][j] = subArray_[i][col];
+                col++;
+            }
+        }
+        return array_;
+    }
+    
+    public byte[][] addSubImageToCol(byte[][] array_, byte[][] subArray_) {
+        int arrayRow = array_.length;
+        int arrayCol = array_[0].length;
+        int subArrayRow = subArray_.length;
+        int subArrayCol = subArray_[0].length;
+        byte newArray[][] = new byte[arrayRow][arrayCol + subArrayCol];
+        for (int i = 0; i < arrayCol; i++) {
+            int row = 0;
+            for (int j = arrayRow; j < arrayRow + subArrayRow; j++) {
+                newArray[i][j] = subArray_[row][j];
+                row++;
+            }
+        }
+        return newArray;
+    }
+    
+    public byte[][] monotoBidi(final byte[] array, 
+            final int rows, final int cols) {
+        byte[][] bidi = new byte[rows][cols];
+        for ( int i = 0; i < rows; i++ )
+            System.arraycopy(array, (i*cols), bidi[i], 0, cols);
+        return bidi;
+    } 
+    
+    public void HelloCV() {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+        Mat mat = Mat.eye(3, 3, CvType.CV_8UC1);
+        System.out.println("mat = " + mat.dump());
     }
 
 }

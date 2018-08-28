@@ -11,6 +11,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +27,8 @@ import org.micromanager.data.Image;
 import org.micromanager.data.Coords;
 import org.micromanager.display.DisplayWindow;
 import mmcorej.TaggedImage;
+import org.micromanager.Album;
+import org.micromanager.StagePosition;
 
 import org.micromanager.internal.utils.MMFrame;
 import org.micromanager.utils.FileDialogs;
@@ -52,6 +55,8 @@ public class RoiMappingFrame extends MMDialog {
     private static String ROICOORDINATES = "(0, 0) (0, 0)";
     private static String KERNELCENTER = "(0, 0)";
     private double[] stagePos = {0, 0, 0};
+    private ArrayList<StagePosition> stagePosList_;
+    private Album kernel_;
     
     public RoiMappingFrame(Studio studio) {
         super("Example Plugin GUI");
@@ -155,6 +160,7 @@ public class RoiMappingFrame extends MMDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                stagePos = sk.getStagePosition(); 
+               stagePosList_ = sk.generatePositions(3);
                KERNELCENTER = String.format("(%.2f, %.2f)", stagePos[0], stagePos[1]);
                stagePosText_.setText(KERNELCENTER);
             }
@@ -162,16 +168,18 @@ public class RoiMappingFrame extends MMDialog {
         add(centerKernelButton, "split 2");
         
         // will snap 3*3 kernel
-        JButton snapButton = new JButton("Snap Image");
+        JButton snapButton = new JButton("Snap Kernel");
         snapButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // try snap an image
-                sk.snapImage();
+                // try snap a Kernel
+                kernel_ = sk.snapImages(stagePosList_);
+                sk.getKernelImage(kernel_, 3);
+                sk.HelloCV();
             }
         });
         add(snapButton, "wrap");
-        
+               
         add(new JLabel("Kernel center (X, Y): "), "split 2");
         stagePosText_ = new JTextField(17);
         stagePosText_.setText(KERNELCENTER);

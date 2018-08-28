@@ -36,7 +36,7 @@ public class TiffParser {
     Metadata metadata;
     ImagePlus win;
     
-private long frameLengthMs;
+    private long frameLengthMs;
     
     public TiffParser(Studio studio_, long frameLengthMs) {
         app_ = studio_;
