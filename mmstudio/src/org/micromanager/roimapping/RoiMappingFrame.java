@@ -57,6 +57,8 @@ public class RoiMappingFrame extends MMDialog {
     private double[] stagePos = {0, 0, 0};
     private ArrayList<StagePosition> stagePosList_;
     private Album kernel_;
+    private byte[][] kerneldata_;
+    private int kernelSize_ = 3;
     
     public RoiMappingFrame(Studio studio) {
         super("Example Plugin GUI");
@@ -160,7 +162,7 @@ public class RoiMappingFrame extends MMDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                stagePos = sk.getStagePosition(); 
-               stagePosList_ = sk.generatePositions(3);
+               stagePosList_ = sk.generatePositions(kernelSize_);
                KERNELCENTER = String.format("(%.2f, %.2f)", stagePos[0], stagePos[1]);
                stagePosText_.setText(KERNELCENTER);
             }
@@ -174,7 +176,8 @@ public class RoiMappingFrame extends MMDialog {
             public void actionPerformed(ActionEvent e) {
                 // try snap a Kernel
                 kernel_ = sk.snapImages(stagePosList_);
-                sk.getKernelImage(kernel_, 3);
+                kerneldata_ = sk.getKernelImage(kernel_, kernelSize_);
+                sk.displayKernel(kerneldata_);
                 sk.HelloCV();
             }
         });

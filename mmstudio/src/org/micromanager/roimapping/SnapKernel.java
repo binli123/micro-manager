@@ -16,7 +16,10 @@ import org.micromanager.StagePosition;
 import org.micromanager.Studio;
 import org.micromanager.data.Coords;
 import org.micromanager.data.Datastore;
+import org.micromanager.data.DatastoreFrozenException;
+import org.micromanager.data.DatastoreRewriteException;
 import org.micromanager.data.Image;
+import org.micromanager.data.Metadata;
 import org.micromanager.display.DisplayWindow;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -41,6 +44,7 @@ public class SnapKernel {
     private long imWidth;
     private double pixelSize;
     private int size_;
+    private Metadata.MetadataBuilder m_builder;
     
     public SnapKernel(Studio studio_){
         app_ = studio_;
@@ -149,16 +153,29 @@ public class SnapKernel {
         }
     }
     
-    public void getKernelImage(Album album_, int size_) {
+    public byte[][] getKernelImage(Album album_, int size_) {
         store = album_.getDatastore();
         byte rawdata[] = new byte[512*512]; 
+        byte bididata[][] = new byte[512][512];
         byte kerneldata[][] = new byte[512*size_][512*size_]; // [row][col]
+        int xKey; int yKey;
+        xKey = 0; yKey = 0;
         int numOfImg = store.getNumImages();
-        for (int i = 0; i<size_; i++) {
-            rawdata = getRawData(album_, i);
-            byte bididata[][] = monotoBidi(rawdata, 512, 512);
-            //addSubImageToRow(kerneldata,bididata);
+        for (int i = 0; i<size_*size_; i++) {
+            rawdata = getRawData(album_, i);           
+            bididata = monotoBidi(rawdata, 512, 512);
+            if (i%size_!=0 || i==0) {
+                kerneldata = addSubImageToRow(kerneldata, bididata, xKey, yKey);
+                xKey = xKey + 512;
+                yKey = yKey;
+            } else if (i%size_==0 && i!=0) {
+                xKey = 0;
+                yKey = yKey + 512;
+                kerneldata = addSubImageToCol(kerneldata, bididata, xKey, yKey);
+                xKey = xKey + 512;     
+            }    
         }
+        return kerneldata;
     }
         
     public byte[] getRawData(Album album_, int index_) {
@@ -178,34 +195,27 @@ public class SnapKernel {
    
     public byte[][] addSubImageToRow(byte[][] array_, byte[][] subArray_, 
             int xKey, int yKey) {
-        int arrayRow = yKey;
-        int arrayCol = xKey;
         int subArrayRow = subArray_.length;
         int subArrayCol = subArray_[0].length;
-        for (int i = 0; i < arrayRow; i++) {
-            int col = 0;
-            for (int j = arrayCol; j < arrayCol + subArrayCol; j++) {
-                array_[i][j] = subArray_[i][col];
-                col++;
+        for (int i = 0; i < subArrayRow; i++) {
+            for (int j = 0; j < subArrayCol; j++) {
+                array_[xKey+i][yKey+j] = subArray_[i][j];
             }
         }
         return array_;
     }
     
-    public byte[][] addSubImageToCol(byte[][] array_, byte[][] subArray_) {
-        int arrayRow = array_.length;
-        int arrayCol = array_[0].length;
+    public byte[][] addSubImageToCol(byte[][] array_, byte[][] subArray_, 
+            int xKey, int yKey) {
         int subArrayRow = subArray_.length;
         int subArrayCol = subArray_[0].length;
-        byte newArray[][] = new byte[arrayRow][arrayCol + subArrayCol];
-        for (int i = 0; i < arrayCol; i++) {
+        for (int j = 0; j < subArrayCol; j++) {
             int row = 0;
-            for (int j = arrayRow; j < arrayRow + subArrayRow; j++) {
-                newArray[i][j] = subArray_[row][j];
-                row++;
+            for (int i = 0; i < subArrayRow; i++) {
+                array_[xKey+i][yKey+j] = subArray_[i][j];
             }
         }
-        return newArray;
+        return array_;
     }
     
     public byte[][] monotoBidi(final byte[] array, 
@@ -214,7 +224,38 @@ public class SnapKernel {
         for ( int i = 0; i < rows; i++ )
             System.arraycopy(array, (i*cols), bidi[i], 0, cols);
         return bidi;
-    } 
+    }
+    
+    public byte[] bidiToMono( final byte[][] array ) {
+    int rows = array.length, cols = array[0].length;
+    byte[] mono = new byte[(rows*cols)];
+    for ( int i = 0; i < rows; i++ )
+        System.arraycopy(array[i], 0, mono, (i*cols), cols);    
+        return mono;
+}
+    
+    public void displayKernel(byte[][] kernel_) {
+        Image kernelImage = null;
+        Datastore store;
+        Coords coords;
+        Coords.CoordsBuilder c_builder;
+        Metadata metadata;
+        store = app_.data().createRAMDatastore();
+        c_builder = app_.data().getCoordsBuilder();
+        m_builder = app_.data().getMetadataBuilder();
+        m_builder.imageNumber(0l).camera("tiffParser").exposureMs(1.0d)
+                .xPositionUm(0.0).yPositionUm(0.0).zPositionUm(0.0)
+                .positionName("tiffParser");
+        int height = kernel_.length;
+        int width = kernel_[0].length;
+        int bytesPerPixel;
+        bytesPerPixel = 1;
+        coords = c_builder.build();
+        metadata = m_builder.build();
+        kernelImage = app_.data().createImage(bidiToMono(kernel_), width, height, 
+                bytesPerPixel, 1, coords, metadata);
+        app_.displays().show(kernelImage);
+    }
     
     public void HelloCV() {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
