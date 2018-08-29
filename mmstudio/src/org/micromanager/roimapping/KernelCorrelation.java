@@ -5,10 +5,29 @@
  */
 package org.micromanager.roimapping;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import org.micromanager.Studio;
+import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
+import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfDMatch;
+import org.opencv.core.MatOfKeyPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.Point;
+import org.opencv.features2d.DescriptorExtractor;
+import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.features2d.FeatureDetector;
+import org.opencv.features2d.Features2d;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 
 
 public class KernelCorrelation {
@@ -28,5 +47,101 @@ public class KernelCorrelation {
             matImage.put(i, 0, array_[i]);
         }
         return matImage;
+    }
+    
+    public BufferedImage matToBufferedImage(Mat bgr) {
+        int width = bgr.width();
+        int height = bgr.height();
+        BufferedImage image;
+        WritableRaster raster;
+        image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+        raster = image.getRaster();
+
+        byte[] px = new byte[1];
+
+        for (int y=0; y<height; y++) {
+            for (int x=0; x<width; x++) {
+                bgr.get(y,x,px);
+                raster.setSample(x, y, 0, px[0]);
+            }            
+        }
+        return image;
+    }
+    
+    public MatOfKeyPoint getKeyPoints(Mat mat) {
+        FeatureDetector fd = FeatureDetector.create(FeatureDetector.FAST);
+        MatOfKeyPoint mkp = new MatOfKeyPoint();
+        fd.detect(mat, mkp);
+        return mkp;
+    }
+    
+    public Mat getFeatures(Mat mat) {
+        Mat desc = new Mat();
+        MatOfKeyPoint mkp = getKeyPoints(mat);
+        DescriptorExtractor de = DescriptorExtractor.create(DescriptorExtractor.ORB);
+        de.compute(mat, mkp, desc);
+        return desc;        
+    }
+    
+    public Mat readImage(String filePath) {
+        Imgcodecs imageCodecs = new Imgcodecs();
+        Mat matImage = imageCodecs.imread(filePath);
+        Imgproc.cvtColor(matImage, matImage, Imgproc.COLOR_BGR2GRAY);
+        return matImage;
+    }
+    
+    public void findMatch() {
+        Mat image = new Mat();
+        Mat kernel = new Mat();
+        image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image.tif");
+        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image.tif");
+        DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
+        List<MatOfDMatch> matches = new ArrayList<MatOfDMatch>();
+        MatOfKeyPoint keypoints1 = new MatOfKeyPoint();
+        MatOfKeyPoint keypoints2 = new MatOfKeyPoint();
+        Mat desc1 = new Mat();
+        Mat desc2 = new Mat();
+        keypoints1 = getKeyPoints(image);
+        keypoints2 = getKeyPoints(kernel);
+        desc1 = getFeatures(image);
+        desc2 = getFeatures(kernel); 
+        matcher.knnMatch(desc1, desc2, matches, 2);
+        
+        LinkedList<DMatch> good_matches = new LinkedList<DMatch>();
+        for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
+        MatOfDMatch matOfDMatch = (MatOfDMatch) iterator.next();
+            if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.9) {
+                good_matches.add(matOfDMatch.toArray()[0]);
+            }               
+        }
+        
+        List<Point> pts1 = new ArrayList<Point>();
+        List<Point> pts2 = new ArrayList<Point>();
+        for(int i = 0; i<good_matches.size(); i++){
+            pts1.add(keypoints1.toList().get(good_matches.get(i).queryIdx).pt);
+            pts2.add(keypoints2.toList().get(good_matches.get(i).trainIdx).pt);     
+        }
+        
+        Mat outputMask = new Mat();
+        MatOfPoint2f pts1Mat = new MatOfPoint2f();
+        pts1Mat.fromList(pts1);
+        MatOfPoint2f pts2Mat = new MatOfPoint2f();
+        pts2Mat.fromList(pts2);
+        
+        Mat Homog = Calib3d.findHomography(pts1Mat, pts2Mat, Calib3d.RANSAC, 15, outputMask, 2000, 0.995);
+        
+        LinkedList<DMatch> better_matches = new LinkedList<DMatch>();
+        for (int i = 0; i < good_matches.size(); i++) {
+            if (outputMask.get(i, 0)[0] != 0.0) {
+                better_matches.add(good_matches.get(i));
+            }
+        }
+        
+        Mat outputImg = new Mat();
+        MatOfDMatch better_matches_mat = new MatOfDMatch();
+        better_matches_mat.fromList(better_matches);
+        Features2d.drawMatches(image, keypoints1, kernel, keypoints2, better_matches_mat, outputImg);
+        
+        Imgcodecs.imwrite("C:/Users/MuSha/Desktop/Image Data/Images/result.tif", outputImg);
     }
 }

@@ -151,6 +151,7 @@ public class RoiMappingFrame extends MMDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 kc.loadArrayAsMat(kerneldata_);
+                kc.findMatch();
             }
         });
         add(correlationButton, "wrap");
