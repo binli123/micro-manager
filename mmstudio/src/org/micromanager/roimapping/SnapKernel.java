@@ -199,7 +199,7 @@ public class SnapKernel {
         int subArrayCol = subArray_[0].length;
         for (int i = 0; i < subArrayRow; i++) {
             for (int j = 0; j < subArrayCol; j++) {
-                array_[xKey+i][yKey+j] = subArray_[i][j];
+                array_[yKey+i][xKey+j] = subArray_[i][j];
             }
         }
         return array_;
@@ -212,7 +212,7 @@ public class SnapKernel {
         for (int j = 0; j < subArrayCol; j++) {
             int row = 0;
             for (int i = 0; i < subArrayRow; i++) {
-                array_[xKey+i][yKey+j] = subArray_[i][j];
+                array_[yKey+i][xKey+j] = subArray_[i][j];
             }
         }
         return array_;
