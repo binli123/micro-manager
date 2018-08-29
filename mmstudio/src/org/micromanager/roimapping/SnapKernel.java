@@ -195,8 +195,8 @@ public class SnapKernel {
    
     public byte[][] addSubImageToRow(byte[][] array_, byte[][] subArray_, 
             int xKey, int yKey) {
-        int subArrayRow = subArray_.length;
-        int subArrayCol = subArray_[0].length;
+        int subArrayRow = subArray_.length; // height
+        int subArrayCol = subArray_[0].length; // width
         for (int i = 0; i < subArrayRow; i++) {
             for (int j = 0; j < subArrayCol; j++) {
                 array_[yKey+i][xKey+j] = subArray_[i][j];
@@ -255,12 +255,6 @@ public class SnapKernel {
         kernelImage = app_.data().createImage(bidiToMono(kernel_), width, height, 
                 bytesPerPixel, 1, coords, metadata);
         app_.displays().show(kernelImage);
-    }
-    
-    public void HelloCV() {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-        Mat mat = Mat.eye(3, 3, CvType.CV_8UC1);
-        System.out.println("mat = " + mat.dump());
     }
 
 }

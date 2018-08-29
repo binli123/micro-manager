@@ -67,16 +67,17 @@ public class RoiMappingFrame extends MMDialog {
         prefs_ = this.getPrefsNode();
         ImageAnnotation ia = new ImageAnnotation(studio_);
         SnapKernel sk = new SnapKernel(studio_);
+        KernelCorrelation kc = new KernelCorrelation(studio_);
 
         JLabel title = new JLabel("ROIs mapping");
         title.setFont(new Font("Arial", Font.BOLD, 14));
         add(title, "span, alignx center, wrap");
         
         // Display the path to the low resolution image
-        add(new JLabel("Image path: "));
+        add(new JLabel("Image path: "), "wrap");
         userText_ = new JTextField(30);
         userText_.setText(LOWRESIMAGENAME);
-        add(userText_, "newline");
+        add(userText_, "split 3");
            
         // Create load button for the low resolution image
         JButton lowResButton = new JButton(" ... ");
@@ -101,7 +102,7 @@ public class RoiMappingFrame extends MMDialog {
                 }
             }
         });
-        add(lowResButton, "Split 2");
+        add(lowResButton);
         
         // will dislpay the selected image
         JButton loadImageButton = new JButton("Display Image");
@@ -117,12 +118,53 @@ public class RoiMappingFrame extends MMDialog {
             }
         });
         add(loadImageButton, "wrap");
+                
         
+        JButton centerKernelButton = new JButton("Center Kernel");
+        centerKernelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+               stagePos = sk.getStagePosition(); 
+               stagePosList_ = sk.generatePositions(kernelSize_);
+               KERNELCENTER = String.format("(%.2f, %.2f)", stagePos[0], stagePos[1]);
+               stagePosText_.setText(KERNELCENTER);
+            }
+        });
+        add(centerKernelButton, "split 3");
+        
+        // will snap 3*3 kernel
+        JButton snapButton = new JButton("Snap Kernel");
+        snapButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // try snap a Kernel
+                kernel_ = sk.snapImages(stagePosList_);
+                kerneldata_ = sk.getKernelImage(kernel_, kernelSize_);
+                sk.displayKernel(kerneldata_);
+            }
+        });
+        add(snapButton);
+        
+        // correlation between kernel and low resolution image
+        JButton correlationButton = new JButton("Correlation");
+        correlationButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                kc.loadArrayAsMat(kerneldata_);
+            }
+        });
+        add(correlationButton, "wrap");
+               
+        add(new JLabel("Kernel center (X, Y): "), "split 2");
+        stagePosText_ = new JTextField(17);
+        stagePosText_.setText(KERNELCENTER);
+        add(stagePosText_, "wrap");
+         
         // display the image coordinates of ROI
-        add(new JLabel("ROI Coordinates: "));
+        add(new JLabel("ROI Coordinates: "), "wrap");
         coordinatesText_ = new JTextField(30);
         coordinatesText_.setText(ROICOORDINATES);
-        add(coordinatesText_, "newline");
+        add(coordinatesText_, "split 2");
         
         // will update image coordiates of a selected ROI
         JButton annotateButton = new JButton("Annotate Image");
@@ -156,37 +198,6 @@ public class RoiMappingFrame extends MMDialog {
             }
         });
         add(annotateButton, "wrap");
-        
-        JButton centerKernelButton = new JButton("Center Kernel");
-        centerKernelButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-               stagePos = sk.getStagePosition(); 
-               stagePosList_ = sk.generatePositions(kernelSize_);
-               KERNELCENTER = String.format("(%.2f, %.2f)", stagePos[0], stagePos[1]);
-               stagePosText_.setText(KERNELCENTER);
-            }
-        });
-        add(centerKernelButton, "split 2");
-        
-        // will snap 3*3 kernel
-        JButton snapButton = new JButton("Snap Kernel");
-        snapButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // try snap a Kernel
-                kernel_ = sk.snapImages(stagePosList_);
-                kerneldata_ = sk.getKernelImage(kernel_, kernelSize_);
-                sk.displayKernel(kerneldata_);
-                sk.HelloCV();
-            }
-        });
-        add(snapButton, "wrap");
-               
-        add(new JLabel("Kernel center (X, Y): "), "split 2");
-        stagePosText_ = new JTextField(17);
-        stagePosText_.setText(KERNELCENTER);
-        add(stagePosText_);
         
         pack();
     }
