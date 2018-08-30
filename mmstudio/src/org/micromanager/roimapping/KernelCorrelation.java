@@ -22,6 +22,7 @@ import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Size;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.FeatureDetector;
@@ -69,7 +70,7 @@ public class KernelCorrelation {
     }
     
     public MatOfKeyPoint getKeyPoints(Mat mat) {
-        FeatureDetector fd = FeatureDetector.create(FeatureDetector.FAST);
+        FeatureDetector fd = FeatureDetector.create(FeatureDetector.ORB);
         MatOfKeyPoint mkp = new MatOfKeyPoint();
         fd.detect(mat, mkp);
         return mkp;
@@ -90,11 +91,53 @@ public class KernelCorrelation {
         return matImage;
     }
     
+    public Mat downSampling(Mat matImage, int rate) {
+        Mat src = matImage;
+        for (int i = 0; i<rate; i++) {
+            Imgproc.pyrDown(src, matImage, new Size(src.cols()/2, src.rows()/2));    
+        }     
+        return matImage;
+    }
+    
+    public Mat upSampling(Mat matImage, int rate) {
+        Mat src = matImage;
+        for (int i = 0; i<rate; i++) {
+            Imgproc.pyrUp(src, matImage, new Size(src.cols()*2, src.rows()*2));    
+        }     
+        return matImage;
+    }
+    
     public void findMatch() {
         Mat image = new Mat();
         Mat kernel = new Mat();
         image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image.tif");
-        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image.tif");
+        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image crop.tif");
+        // resampling
+        image = downSampling(image, 0);
+        kernel = upSampling(kernel, 0);
+        
+        // contrast
+        //Imgproc.equalizeHist(image, image);
+        //Imgproc.equalizeHist(kernel, kernel);
+
+        // morphology
+        Mat morpElement = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, 
+                 new Size(3, 3));
+        Imgproc.dilate(image, image, morpElement);
+        Imgproc.erode(image, image, morpElement);
+        
+        // filtering
+        Imgproc.medianBlur(image, image, 5);
+        
+        Mat destination = new Mat(image.rows(),image.cols(),image.type());
+        Imgproc.GaussianBlur(image, destination, new Size(0,0), 10);
+        Core.addWeighted(image, 1.5, destination, -0.5, 0, destination);
+        image = destination;
+        
+        // detect edges in kernel
+        // Imgproc.Canny(image, image, 50, 200);
+        // Imgproc.Canny(kernel, kernel, 50, 200);
+        
         DescriptorMatcher matcher = DescriptorMatcher.create(DescriptorMatcher.BRUTEFORCE_HAMMING);
         List<MatOfDMatch> matches = new ArrayList<MatOfDMatch>();
         MatOfKeyPoint keypoints1 = new MatOfKeyPoint();
@@ -110,7 +153,7 @@ public class KernelCorrelation {
         LinkedList<DMatch> good_matches = new LinkedList<DMatch>();
         for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
         MatOfDMatch matOfDMatch = (MatOfDMatch) iterator.next();
-            if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.9) {
+            if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.8) {
                 good_matches.add(matOfDMatch.toArray()[0]);
             }               
         }
@@ -142,6 +185,6 @@ public class KernelCorrelation {
         better_matches_mat.fromList(better_matches);
         Features2d.drawMatches(image, keypoints1, kernel, keypoints2, better_matches_mat, outputImg);
         
-        Imgcodecs.imwrite("C:/Users/MuSha/Desktop/Image Data/Images/result.tif", outputImg);
+        Imgcodecs.imwrite("C:/Users/MuSha/Desktop/Image Data/Images/result1.tif", outputImg);
     }
 }

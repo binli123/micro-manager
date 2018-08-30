@@ -68,6 +68,7 @@ public class RoiMappingFrame extends MMDialog {
         ImageAnnotation ia = new ImageAnnotation(studio_);
         SnapKernel sk = new SnapKernel(studio_);
         KernelCorrelation kc = new KernelCorrelation(studio_);
+        TemplateMatching tp = new TemplateMatching(studio_); 
 
         JLabel title = new JLabel("ROIs mapping");
         title.setFont(new Font("Arial", Font.BOLD, 14));
@@ -152,6 +153,7 @@ public class RoiMappingFrame extends MMDialog {
             public void actionPerformed(ActionEvent e) {
                 kc.loadArrayAsMat(kerneldata_);
                 kc.findMatch();
+                tp.findMatch();
             }
         });
         add(correlationButton, "wrap");
