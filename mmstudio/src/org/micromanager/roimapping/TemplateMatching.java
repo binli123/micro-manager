@@ -67,8 +67,7 @@ public class TemplateMatching {
         Mat image = new Mat();
         Mat kernel = new Mat();
         Mat imageEdge = new Mat();
-        Mat kernelEdge = new Mat();
-        Mat kernelRe = new Mat();
+        Mat kernelEdge = new Mat();;
         Mat result = new Mat();
         double r = 0;
         MinMaxLocResult mmr;
@@ -80,8 +79,10 @@ public class TemplateMatching {
         // detect edges
         Imgproc.Canny(image, imageEdge, 50, 200);
         
-        for(scale=0.02; scale<0.2;){
-            Imgproc.Canny(resizeImage(kernel, scale), kernelEdge, 50, 200);
+        for(scale=0.01; scale<0.2;){
+            Mat kernelRe = new Mat();
+            kernelRe = resizeImage(kernel, scale);
+            Imgproc.Canny(kernelRe, kernelEdge, 50, 200);
             Imgproc.matchTemplate(imageEdge, kernelEdge, result, Imgproc.TM_CCOEFF);
             mmr = Core.minMaxLoc(result);
             
