@@ -31,9 +31,9 @@ public class TemplateMatching {
         return matImage;
     }
     
-    public Mat resizeImage(Mat image, double scale) {
-        Imgproc.resize(image, image, new Size(image.cols()*scale, image.rows()*scale));
-        return image;
+    public Mat resizeImage(Mat scr, Mat dst, double scale) {
+        Imgproc.resize(scr, dst, new Size(scr.cols()*scale, scr.rows()*scale));
+        return dst;
     }
     
     public Mat downSampling(Mat matImage, int rate) {
@@ -72,21 +72,21 @@ public class TemplateMatching {
         double r = 0;
         MinMaxLocResult mmr;
         double maxValue = 0;
-        Point maxLocation;
+        Point maxLocation = null;
         image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image.tif");
-        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image.tif");
+        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01-1.tif");
         
         // detect edges
-        Imgproc.Canny(image, imageEdge, 50, 200);
+        Imgproc.Canny(image, imageEdge, 10, 40);
         
-        for(scale=0.01; scale<0.2;){
+        for(scale=0.01; scale<0.1;){
             Mat kernelRe = new Mat();
-            kernelRe = resizeImage(kernel, scale);
-            Imgproc.Canny(kernelRe, kernelEdge, 50, 200);
+            kernelRe = resizeImage(kernel,kernelRe, scale);
+            Imgproc.Canny(kernelRe, kernelEdge, 10, 40);
             Imgproc.matchTemplate(imageEdge, kernelEdge, result, Imgproc.TM_CCOEFF);
             mmr = Core.minMaxLoc(result);
             
-            if(scale==0.01) {
+            if(scale==0.1) {
                 maxValue = mmr.maxVal;
                 maxLocation = mmr.maxLoc;
                 r = scale;
@@ -96,7 +96,7 @@ public class TemplateMatching {
                 maxLocation = mmr.maxLoc;
                 r = scale;
             }
-            scale = scale + 0.01;
+            scale = scale + 0.002;
         }
         r = scale;
     }
