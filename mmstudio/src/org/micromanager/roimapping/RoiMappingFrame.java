@@ -36,6 +36,7 @@ import org.micromanager.utils.MMDialog;
 import org.micromanager.utils.MMException;
 import org.micromanager.utils.MMScriptException;
 import org.micromanager.utils.ReportingUtils;
+import org.opencv.core.Mat;
 
 public class RoiMappingFrame extends MMDialog {
     
@@ -57,6 +58,8 @@ public class RoiMappingFrame extends MMDialog {
     private double[] stagePos = {0, 0, 0};
     private ArrayList<StagePosition> stagePosList_;
     private Album kernel_;
+    private Mat kernelImage;
+    private Mat image;
     private byte[][] kerneldata_;
     private int kernelSize_ = 3;
     
@@ -152,8 +155,11 @@ public class RoiMappingFrame extends MMDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 kc.loadArrayAsMat(kerneldata_);
-                kc.findMatch();
-                tp.findMatch();
+                //kc.findMatch();
+                // kernelImage = tp.loadArrayAsMat(kerneldata_);
+                kernelImage = tp.readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01.tif");
+                image = tp.readImage(lowResFileName_);
+                tp.findMatch(image, kernelImage);
             }
         });
         add(correlationButton, "wrap");

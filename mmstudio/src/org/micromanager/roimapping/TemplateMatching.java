@@ -18,6 +18,12 @@ import org.opencv.imgproc.Imgproc;
 
 public class TemplateMatching {
     private final Studio app_;
+    double scale = 0.01;
+    private ArrayList<Double> scales = new ArrayList<Double>();
+    private double maxValue = 0;
+    private Point maxLocation = null;
+    private ArrayList<Double> maxValues = new ArrayList<Double>();
+    private ArrayList<Point> matchLocations = new ArrayList();
     
     public TemplateMatching(Studio studio_) {
         app_ = studio_;
@@ -62,8 +68,15 @@ public class TemplateMatching {
         return matImage;
     }
     
-    public void findMatch() {
-        double scale = 0.01;
+    public ArrayList<Point> getMatchPositions() {
+        return matchLocations;
+    }
+    
+    public ArrayList<Double> getMatchScales() {
+        return scales;
+    }
+    
+    public void findMatch(Mat image_, Mat kernel_) {
         Mat image = new Mat();
         Mat kernel = new Mat();
         Mat imageEdge = new Mat();
@@ -71,18 +84,19 @@ public class TemplateMatching {
         Mat result = new Mat();
         double r = 0;
         MinMaxLocResult mmr;
-        double maxValue = 0;
-        Point maxLocation = null;
-        image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image.tif");
-        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01-1.tif");
+        // image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image.tif");
+        // kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01.tif");
+        image = image_;
+        kernel = kernel_;
+        int res = 0;
         
         // detect edges
-        Imgproc.Canny(image, imageEdge, 10, 40);
+        Imgproc.Canny(image, imageEdge, 5, 10);
         
         for(scale=0.01; scale<0.1;){
             Mat kernelRe = new Mat();
             kernelRe = resizeImage(kernel,kernelRe, scale);
-            Imgproc.Canny(kernelRe, kernelEdge, 10, 40);
+            Imgproc.Canny(kernelRe, kernelEdge, 5, 10);
             Imgproc.matchTemplate(imageEdge, kernelEdge, result, Imgproc.TM_CCOEFF);
             mmr = Core.minMaxLoc(result);
             
@@ -95,8 +109,16 @@ public class TemplateMatching {
                 maxValue = mmr.maxVal;
                 maxLocation = mmr.maxLoc;
                 r = scale;
+                res = 0;
+            } else {
+                res++;
+                if (res == 5) {
+                    matchLocations.add(maxLocation);
+                    maxValues.add(maxValue);
+                    scales.add(scale-0.005);
+                }
             }
-            scale = scale + 0.002;
+            scale = scale + 0.001;
         }
         r = scale;
     }

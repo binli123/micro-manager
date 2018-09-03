@@ -107,7 +107,12 @@ public class KernelCorrelation {
         return matImage;
     }
     
-    public void findMatch() {
+    public Mat resizeImage(Mat scr, Mat dst, double scale) {
+        Imgproc.resize(scr, dst, new Size(scr.cols()*scale, scr.rows()*scale));
+        return dst;
+    }
+    
+    public void findMatch(double scale, Mat kernel_, Mat image_) {
         Mat image = new Mat();
         Mat kernel = new Mat();
         image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image.tif");
@@ -129,10 +134,10 @@ public class KernelCorrelation {
         // filtering
         Imgproc.medianBlur(image, image, 5);
         
-        Mat destination = new Mat(image.rows(),image.cols(),image.type());
-        Imgproc.GaussianBlur(image, destination, new Size(0,0), 10);
-        Core.addWeighted(image, 1.5, destination, -0.5, 0, destination);
-        image = destination;
+        // Mat destination = new Mat(image.rows(),image.cols(),image.type());
+        // Imgproc.GaussianBlur(image, destination, new Size(0,0), 10);
+        // Core.addWeighted(image, 1.5, destination, -0.5, 0, destination);
+        // image = destination;
         
         // detect edges in kernel
         // Imgproc.Canny(image, image, 50, 200);
@@ -186,5 +191,9 @@ public class KernelCorrelation {
         Features2d.drawMatches(image, keypoints1, kernel, keypoints2, better_matches_mat, outputImg);
         
         Imgcodecs.imwrite("C:/Users/MuSha/Desktop/Image Data/Images/result1.tif", outputImg);
+    }
+    
+    public void findBestMatch() {
+        
     }
 }
