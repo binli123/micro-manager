@@ -12,6 +12,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,7 +37,9 @@ import org.micromanager.utils.MMDialog;
 import org.micromanager.utils.MMException;
 import org.micromanager.utils.MMScriptException;
 import org.micromanager.utils.ReportingUtils;
+import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 
 public class RoiMappingFrame extends MMDialog {
     
@@ -62,6 +65,9 @@ public class RoiMappingFrame extends MMDialog {
     private Mat image;
     private byte[][] kerneldata_;
     private int kernelSize_ = 3;
+    private ArrayList<Point> matchLocations = new ArrayList();
+    private ArrayList<Double> scales = new ArrayList<Double>();
+    private Point bestPosition = null;
     
     public RoiMappingFrame(Studio studio) {
         super("Example Plugin GUI");
@@ -71,7 +77,7 @@ public class RoiMappingFrame extends MMDialog {
         ImageAnnotation ia = new ImageAnnotation(studio_);
         SnapKernel sk = new SnapKernel(studio_);
         KernelCorrelation kc = new KernelCorrelation(studio_);
-        TemplateMatching tp = new TemplateMatching(studio_); 
+        TemplateMatching tm = new TemplateMatching(studio_); 
 
         JLabel title = new JLabel("ROIs mapping");
         title.setFont(new Font("Arial", Font.BOLD, 14));
@@ -154,12 +160,13 @@ public class RoiMappingFrame extends MMDialog {
         correlationButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                kc.loadArrayAsMat(kerneldata_);
-                //kc.findMatch();
-                // kernelImage = tp.loadArrayAsMat(kerneldata_);
-                kernelImage = tp.readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01.tif");
-                image = tp.readImage(lowResFileName_);
-                tp.findMatch(image, kernelImage);
+                // kc.loadArrayAsMat(kerneldata_);
+                // kc.findMatch();
+                // kernelImage = tm.loadArrayAsMat(kerneldata_);
+                kernelImage = tm.readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01 greyscale.tif");
+                image = tm.readImage(lowResFileName_);
+                tm.findMatch(image, kernelImage);
+                bestPosition = findBestMatch(tm, kc);
             }
         });
         add(correlationButton, "wrap");
@@ -219,6 +226,29 @@ public class RoiMappingFrame extends MMDialog {
         prefs_.put(LOWRESIMAGENAME, lowResFileName_);
         return fileName;
     }  
+    
+    public Point findBestMatch(TemplateMatching tm_, KernelCorrelation kc_) {
+        KernelCorrelation kc = kc_;
+        TemplateMatching tm = tm_;
+        int numOfLocations = 0;
+        int numOfGoodMatches = 0;
+        Point bestMatchPosition = null;
+        matchLocations = tm.getMatchPositions();
+        scales = tm.getMatchScales();
+        numOfLocations = matchLocations.size();
+        for(int i=0; i<numOfLocations; i++) {
+            Mat croppedImage = new Mat();
+            LinkedList<DMatch> goodMatches = new LinkedList<DMatch>();
+            croppedImage = kc.cropImageFromKernel(image, kernelImage, 
+                    scales.get(i), matchLocations.get(i));
+            goodMatches = kc.findMatch(scales.get(i), kernelImage, croppedImage);
+            if(goodMatches.size()>numOfGoodMatches) {
+                numOfGoodMatches = goodMatches.size();
+                bestMatchPosition = matchLocations.get(i);                
+            }
+        }
+        return bestMatchPosition;    
+    }
  
 }
 

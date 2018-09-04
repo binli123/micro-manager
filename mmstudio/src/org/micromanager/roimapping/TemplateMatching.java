@@ -95,7 +95,9 @@ public class TemplateMatching {
         
         for(scale=0.01; scale<0.1;){
             Mat kernelRe = new Mat();
+            // resize + median
             kernelRe = resizeImage(kernel,kernelRe, scale);
+            Imgproc.medianBlur(kernelRe, kernelRe, 3);
             Imgproc.Canny(kernelRe, kernelEdge, 5, 10);
             Imgproc.matchTemplate(imageEdge, kernelEdge, result, Imgproc.TM_CCOEFF);
             mmr = Core.minMaxLoc(result);

@@ -7,7 +7,6 @@ package org.micromanager.roimapping;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -22,6 +21,7 @@ import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
@@ -107,19 +107,38 @@ public class KernelCorrelation {
         return matImage;
     }
     
-    public Mat resizeImage(Mat scr, Mat dst, double scale) {
-        Imgproc.resize(scr, dst, new Size(scr.cols()*scale, scr.rows()*scale));
+    public Mat resizeImage(Mat src, Mat dst, double scale) {
+        Imgproc.resize(src, dst, new Size(src.cols()*scale, src.rows()*scale));
         return dst;
     }
     
-    public void findMatch(double scale, Mat kernel_, Mat image_) {
+    public Mat cropImageFromKernel(Mat image, Mat kernel, double scale, Point position) {
+        Size sz = kernel.size();
+        Mat imCrop = new Mat();
+        int imageWidth = (int) (sz.width * scale);
+        int imageHeight = (int) (sz.height * scale);
+        int startX = (int) (position.x - 50);
+        int startY = (int) (position.y - 50);
+        int width = (int) (50 + imageWidth);
+        int height = (int) (50 + imageHeight);
+        Rect rectCrop = new Rect(startX, startY, width, height);
+        imCrop = image.submat(rectCrop);
+        return imCrop;
+    }
+    
+    public LinkedList<DMatch> findMatch(double scale, Mat kernel_, Mat image_) {
         Mat image = new Mat();
         Mat kernel = new Mat();
-        image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image.tif");
-        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image crop.tif");
+        LinkedList<DMatch> good_matches = new LinkedList<DMatch>();
+        image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image greyscale crop.tif");
+        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01 greyscale.tif");
         // resampling
-        image = downSampling(image, 0);
-        kernel = upSampling(kernel, 0);
+        // image = downSampling(image, 0);
+        // kernel = upSampling(kernel, 0);
+        
+        Mat kernelRe = new Mat();
+        kernelRe = resizeImage(kernel,kernelRe, scale);
+        Imgproc.medianBlur(kernelRe, kernelRe, 3);
         
         // contrast
         //Imgproc.equalizeHist(image, image);
@@ -150,12 +169,12 @@ public class KernelCorrelation {
         Mat desc1 = new Mat();
         Mat desc2 = new Mat();
         keypoints1 = getKeyPoints(image);
-        keypoints2 = getKeyPoints(kernel);
+        keypoints2 = getKeyPoints(kernelRe);
         desc1 = getFeatures(image);
-        desc2 = getFeatures(kernel); 
+        desc2 = getFeatures(kernelRe); 
         matcher.knnMatch(desc1, desc2, matches, 2);
         
-        LinkedList<DMatch> good_matches = new LinkedList<DMatch>();
+        
         for (Iterator<MatOfDMatch> iterator = matches.iterator(); iterator.hasNext();) {
         MatOfDMatch matOfDMatch = (MatOfDMatch) iterator.next();
             if (matOfDMatch.toArray()[0].distance / matOfDMatch.toArray()[1].distance < 0.8) {
@@ -188,12 +207,8 @@ public class KernelCorrelation {
         Mat outputImg = new Mat();
         MatOfDMatch better_matches_mat = new MatOfDMatch();
         better_matches_mat.fromList(better_matches);
-        Features2d.drawMatches(image, keypoints1, kernel, keypoints2, better_matches_mat, outputImg);
-        
-        Imgcodecs.imwrite("C:/Users/MuSha/Desktop/Image Data/Images/result1.tif", outputImg);
-    }
-    
-    public void findBestMatch() {
-        
-    }
+        Features2d.drawMatches(image, keypoints1, kernelRe, keypoints2, better_matches_mat, outputImg);        
+        Imgcodecs.imwrite("C:/Users/MuSha/Desktop/Image Data/Images/result1.tif", outputImg);        
+        return good_matches;
+    }   
 }
