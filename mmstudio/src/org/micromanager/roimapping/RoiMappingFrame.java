@@ -58,6 +58,7 @@ public class RoiMappingFrame extends MMDialog {
     private JTextField imagePostText_;
     private JTextField kernelSizeText_;
     private int[] roiCoordinates_ = {0, 0, 0, 0};
+    private double[][] kernelReal_ = {{0, 0, 0}, {0, 0, 0}};
     private static String ROICOORDINATES = "(0, 0) (0, 0)";
     private static String KERNELCENTER = "(0, 0)";
     private static String KERNELIMAGECENTER = "(0, 0)";
