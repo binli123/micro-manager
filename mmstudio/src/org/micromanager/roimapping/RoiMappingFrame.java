@@ -208,6 +208,7 @@ public class RoiMappingFrame extends MMDialog {
                 image = tm.readImage(lowResFileName_);
                 tm.findMatch(image, kernelImage);
                 bestPosition = findBestMatch(tm, kc);
+                
             }
         });
         add(correlationButton, "wrap");

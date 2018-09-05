@@ -51,4 +51,8 @@ public class CoordinatesTransformMatrix {
         
         return kernelRealPosition;
     }
+    
+    public void getTransformMatrix(double[] roiCo_, double[] kernelReal_) {
+        
+    }
 }
