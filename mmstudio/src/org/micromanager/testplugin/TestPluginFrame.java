@@ -16,6 +16,7 @@ import javax.swing.*;
 
 import mmcorej.CMMCore;
 import net.miginfocom.swing.MigLayout;
+import org.micromanager.MMStudio;
 import org.micromanager.Studio;
 import org.micromanager.api.ScriptInterface;
 import org.micromanager.data.Datastore;
@@ -46,12 +47,13 @@ public class TestPluginFrame extends MMDialog {
         setLayout(new MigLayout("fill, insets 2, gap 2, flowx"));
         prefs_ = this.getPrefsNode();
 
-        JLabel title = new JLabel("ROIs mapping");
+        JLabel title = new JLabel("Config select");
         title.setFont(new Font("Arial", Font.BOLD, 14));
         add(title, "span, alignx center, wrap");
         
         // Display the path to the low resolution image
         add(new JLabel("Low resolution image: "));
+        
         userText_ = new JTextField(30);
         userText_.setText("Something happened!");
         add(userText_);
@@ -76,16 +78,33 @@ public class TestPluginFrame extends MMDialog {
         });
         add(lowResButton, "wrap");
         
+        // Add second config file 
+                // Display the path to the low resolution image
+        add(new JLabel("Low resolution image: "));
+        
+        userText_ = new JTextField(30);
+        userText_.setText("Something happened!");
+        add(userText_);
+        
+        // Create load button for the low resolution image
+        JButton secondFile = new JButton(" ... ");
+        // Clicking on this button will invoke the ActionListener, which in turn
+        // will ask the user to select a image.
+        secondFile.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+ 
+            }
+        });
+        add(secondFile, "wrap");
+        
         imageInfoLabel_ = new JLabel();
         add(imageInfoLabel_, "growx, split, span");
         JButton annotateButton = new JButton("Snap Image");
         annotateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-            // Display the selected image
-            List<Image> images = studio_.displays().getCurrentWindow().getDisplayedImages();
-            Image aimage = images.get(0);
-            Datastore store = studio_.displays().show(aimage);
+                userText_.setText("test");
             }
         });
         add(annotateButton, "wrap");
@@ -105,5 +124,17 @@ public class TestPluginFrame extends MMDialog {
         return fileName;
     }  
     
+    private void loadConfiguration() {
+      File configFile = FileDialogs.openFile(MMStudio.getFrame(), 
+            "Load a config file", MMStudio.MM_CONFIG_FILE);
+      if (configFile != null) {
+         try{
+         studio_.getCMMCore().loadSystemConfiguration(configFile.getAbsolutePath());
+         }
+         catch(Exception e){
+             System.out.println("Error");
+         }
+      }
+   }
 }
 
