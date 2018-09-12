@@ -98,6 +98,7 @@ public class SnapKernel {
         double imFieldWidth;
         double[] start = {0, 0};
         double[] end = {0, 0};
+        stagePosList_.clear();
         size_ = Size;
         imHeight = app_.getCMMCore().getImageHeight();
         imWidth = app_.getCMMCore().getImageWidth();

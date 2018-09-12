@@ -63,11 +63,13 @@ public class RoiMappingFrame extends MMDialog {
     private static String KERNELCENTER = "(0, 0)";
     private static String KERNELIMAGECENTER = "(0, 0)";
     private double[] stagePos = {0, 0, 0};
-    private ArrayList<StagePosition> stagePosList_;
+    private ArrayList<StagePosition> stagePosList_ = new ArrayList();
     private Album kernel_;
     private Mat kernelImage;
     private Mat image;
+    private Mat afMat;
     private byte[][] kerneldata_;
+    private int[][] kernelRealPosition;
     private int kernelSize_ = 3;
     private ArrayList<Point> matchLocations = new ArrayList();
     private ArrayList<Double> scales = new ArrayList<Double>();
@@ -81,7 +83,8 @@ public class RoiMappingFrame extends MMDialog {
         ImageAnnotation ia = new ImageAnnotation(studio_);
         SnapKernel sk = new SnapKernel(studio_);
         KernelCorrelation kc = new KernelCorrelation(studio_);
-        TemplateMatching tm = new TemplateMatching(studio_); 
+        TemplateMatching tm = new TemplateMatching(studio_);
+        CoordinatesTransformMatrix ctm = new CoordinatesTransformMatrix(studio_);
 
         JLabel title = new JLabel("ROIs mapping");
         title.setFont(new Font("Arial", Font.BOLD, 14));
@@ -114,6 +117,7 @@ public class RoiMappingFrame extends MMDialog {
                 } catch(MMException ex) {
                     ReportingUtils.showError(ex, "Failed to open low resolution image");
                 }
+                image = tm.readImage(lowResFileName_);
             }
         });
         add(lowResButton);
@@ -163,11 +167,11 @@ public class RoiMappingFrame extends MMDialog {
                         roiCoordinates_[0], roiCoordinates_[1], 
                         roiCoordinates_[2], roiCoordinates_[3]);
                 coordinatesText_.setText(ROICOORDINATES);
-               try {
+                try {
                    studio_.getCMMCore().clearROI();
-               } catch(Exception ex) {
+                } catch(Exception ex) {
                    Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
-               }
+                }
             }
         });
         add(annotateButton, "wrap");        
@@ -176,7 +180,8 @@ public class RoiMappingFrame extends MMDialog {
         centerKernelButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-               stagePos = sk.getStagePosition(); 
+               stagePos = sk.getStagePosition();
+               // TODO: set pixelsize and pop out stage control
                stagePosList_ = sk.generatePositions(kernelSize_);
                KERNELCENTER = String.format("(%.2f, %.2f)", stagePos[0], stagePos[1]);
                stagePosText_.setText(KERNELCENTER);
@@ -193,6 +198,7 @@ public class RoiMappingFrame extends MMDialog {
                 kernel_ = sk.snapImages(stagePosList_);
                 kerneldata_ = sk.getKernelImage(kernel_, kernelSize_);
                 sk.displayKernel(kerneldata_);
+                kernelImage = tm.readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 02 greyscale.tif");  
             }
         });
         add(snapButton);
@@ -205,11 +211,13 @@ public class RoiMappingFrame extends MMDialog {
                 // kc.loadArrayAsMat(kerneldata_);
                 // kc.findMatch();
                 // kernelImage = tm.loadArrayAsMat(kerneldata_);
-                kernelImage = tm.readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 02 greyscale.tif");
-                image = tm.readImage(lowResFileName_);
-                tm.findMatch(image, kernelImage);
-                bestPosition = findBestMatch(tm, kc);
-                
+                scales.clear();
+                matchLocations.clear();                              
+                scales = tm.findMatch(image, kernelImage);
+                matchLocations = tm.getMatchPositions();
+                // bestPosition = findBestMatch(tm, kc);
+                // kernelRealPosition = ctm.getKernelStartEnd(stagePosList_, kernelSize_, stagePos);
+                // afMat = ctm.getTransformMatrix(roiCoordinates_, kernelRealPosition);
             }
         });
         add(correlationButton, "wrap");
@@ -272,21 +280,27 @@ public class RoiMappingFrame extends MMDialog {
         int numOfLocations = 0;
         int numOfGoodMatches = 0;
         Point bestMatchPosition = null;
-        matchLocations = tm.getMatchPositions();
-        scales = tm.getMatchScales();
+        // matchLocations = tm.getMatchPositions();
+        // scales = tm.getMatchScales();
         numOfLocations = matchLocations.size();
         for(int i=0; i<numOfLocations; i++) {
             Mat croppedImage = new Mat();
             LinkedList<DMatch> goodMatches = new LinkedList<DMatch>();
+            // crop sub-images arround candidate template matching results
             croppedImage = kc.cropImageFromKernel(image, kernelImage, 
                     scales.get(i), matchLocations.get(i));
             goodMatches = kc.findMatch(scales.get(i), kernelImage, croppedImage);
+            // find the candidate template matching with the most goood matches
             if(goodMatches.size()>numOfGoodMatches) {
                 numOfGoodMatches = goodMatches.size();
                 bestMatchPosition = matchLocations.get(i);                
             }
         }
         return bestMatchPosition;    
+    }
+    
+    public void multipleBestMatch() {
+        
     }
  
 }

@@ -130,8 +130,10 @@ public class KernelCorrelation {
         Mat image = new Mat();
         Mat kernel = new Mat();
         LinkedList<DMatch> good_matches = new LinkedList<DMatch>();
-        image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image greyscale crop.tif");
-        kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01 greyscale.tif");
+        image = image_.clone();
+        kernel = kernel_.clone();
+        // image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image greyscale crop.tif");
+        // kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01 greyscale.tif");
         // resampling
         // image = downSampling(image, 0);
         // kernel = upSampling(kernel, 0);

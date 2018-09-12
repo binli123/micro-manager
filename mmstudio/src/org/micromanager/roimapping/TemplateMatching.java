@@ -19,7 +19,6 @@ import org.opencv.imgproc.Imgproc;
 public class TemplateMatching {
     private final Studio app_;
     double scale = 0.01;
-    private ArrayList<Double> scales = new ArrayList<Double>();
     private double maxValue = 0;
     private Point maxLocation = null;
     private ArrayList<Double> maxValues = new ArrayList<Double>();
@@ -37,9 +36,10 @@ public class TemplateMatching {
         return matImage;
     }
     
-    public Mat resizeImage(Mat scr, Mat dst, double scale) {
-        Imgproc.resize(scr, dst, new Size(scr.cols()*scale, scr.rows()*scale));
-        return dst;
+    public Mat resizeImage(Mat kernel, double scale) {
+        Mat tmp = kernel.clone();
+        Imgproc.resize(tmp, tmp, new Size(), scale, scale, Imgproc.INTER_LINEAR);
+        return tmp;
     }
     
     public Mat downSampling(Mat matImage, int rate) {
@@ -72,37 +72,48 @@ public class TemplateMatching {
         return matchLocations;
     }
     
-    public ArrayList<Double> getMatchScales() {
+    /*public ArrayList<Double> getMatchScales() {
         return scales;
-    }
+    }*/
     
-    public void findMatch(Mat image_, Mat kernel_) {
-        Mat image = new Mat();
-        Mat kernel = new Mat();
-        Mat imageEdge = new Mat();
-        Mat kernelEdge = new Mat();;
-        Mat result = new Mat();
+    public ArrayList<Double> findMatch(Mat image_, Mat kernel_) {
+        Mat image = image_.clone();
+        Mat kernel = kernel_.clone();
+        Mat imageEdge = image_.clone();
+        maxValues.clear();
+        maxValues.clear();
+        matchLocations.clear();
+        maxLocation = null;
         double r = 0;
-        MinMaxLocResult mmr;
-        // image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image.tif");
-        // kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01.tif");
-        image = image_;
-        kernel = kernel_;
+        maxValue = 0;
+        ArrayList<Double> scales = new ArrayList<Double>();
+        MinMaxLocResult mmr = null;
+        //image = readImage("C:/Users/MuSha/Desktop/Image Data/Images/Low resolution image greyscale.tif");
+        //kernel = readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 02 greyscale.tif");
         int res = 0;
+        boolean flag = false;
         
         // detect edges
         Imgproc.Canny(image, imageEdge, 5, 10);
         
         for(scale=0.01; scale<0.1;){
-            Mat kernelRe = new Mat();
             // resize + median
-            kernelRe = resizeImage(kernel,kernelRe, scale);
+            Mat kernelRe = resizeImage(kernel, scale);
+            Mat kernelEdge = kernel_.clone();
             Imgproc.medianBlur(kernelRe, kernelRe, 3);
             Imgproc.Canny(kernelRe, kernelEdge, 5, 10);
+            
+            int result_rows = imageEdge.rows() - kernelEdge.rows() + 1;
+            int result_cols = imageEdge.cols() - kernelEdge.cols() + 1;
+            if(result_rows<=0 || result_cols<=0) {
+               break; 
+            }
+            Mat result = new Mat(result_rows, result_cols, CvType.CV_8U);
+            
             Imgproc.matchTemplate(imageEdge, kernelEdge, result, Imgproc.TM_CCOEFF);
             mmr = Core.minMaxLoc(result);
             
-            if(scale==0.1) {
+            if(scale==0.01) {
                 maxValue = mmr.maxVal;
                 maxLocation = mmr.maxLoc;
                 r = scale;
@@ -112,17 +123,21 @@ public class TemplateMatching {
                 maxLocation = mmr.maxLoc;
                 r = scale;
                 res = 0;
+                flag = false;
             } else {
                 res++;
-                if (res == 5) {
+                if (res == 3 && flag == false) {
                     matchLocations.add(maxLocation);
                     maxValues.add(maxValue);
-                    scales.add(scale-0.005);
+                    scales.add(scale-0.003);
+                    flag = true;
+                    res = 0;
                 }
             }
             scale = scale + 0.001;
         }
         r = scale;
+        return scales;
     }
     
 }
