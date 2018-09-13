@@ -225,7 +225,7 @@ public class RoiMappingFrame extends MMDialog {
                 kernelRows = (int) (kernelImage.rows() * bestScale);
                 kernelImagePosition = ctm.getKernelImgCoords(bestPosition, kernelCols, kernelRows);
                 afMat = ctm.getTransformMatrix(kernelImagePosition, kernelRealPosition);
-                System.out.println(afMat.dump());
+                // System.out.println(afMat.dump());
             }
         });
         add(correlationButton, "wrap");

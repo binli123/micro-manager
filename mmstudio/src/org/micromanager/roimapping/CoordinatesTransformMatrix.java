@@ -82,4 +82,12 @@ public class CoordinatesTransformMatrix {
         afMat = Imgproc.getAffineTransform(new MatOfPoint2f(srcTri), new MatOfPoint2f(dstTri));
         return afMat;
     }
+    
+    public int[][] mapToStage() {
+        int[][] roiRealPosition = {{0, 0, 0}, {0, 0, 0}};
+        
+        
+        
+        return roiRealPosition;
+    }
 }
