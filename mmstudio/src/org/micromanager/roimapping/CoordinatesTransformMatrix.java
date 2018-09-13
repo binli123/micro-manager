@@ -37,6 +37,7 @@ public class CoordinatesTransformMatrix {
             if (sp.numAxes==2 && flag==1) {
                 oneStart = (double) sp.x;
                 flag = 2;
+                continue;
             } 
             if (sp.numAxes==2 && flag==2) {
                 oneEnd = (double) sp.x;
@@ -56,19 +57,29 @@ public class CoordinatesTransformMatrix {
         return kernelRealPosition;
     }
     
-    public Mat getTransformMatrix(int[] roiCoordinates_, int[][] kernelReal_) {
+    public int[] getKernelImgCoords(Point bestPosition, int kernelCols, int kernelRows) {
+        int[] kernelImagePosition = {0, 0, 0, 0};
+        kernelImagePosition[0] = (int) bestPosition.x;
+        kernelImagePosition[1] = (int) bestPosition.y;
+        kernelImagePosition[2] = (int) bestPosition.x + kernelCols;
+        kernelImagePosition[3] = (int) bestPosition.y + kernelRows;
+        
+        return kernelImagePosition;
+    }
+    
+    public Mat getTransformMatrix(int[] kernelImageCoord_, int[][] kernelReal_) {
         Mat afMat = new Mat();
         Point[] srcTri = new Point[3];
-        srcTri[0] = new Point(roiCoordinates_[0], roiCoordinates_[1]);
-        srcTri[1] = new Point(roiCoordinates_[1], roiCoordinates_[2]);
-        srcTri[2] = new Point(roiCoordinates_[2], roiCoordinates_[3]);
+        srcTri[0] = new Point(kernelImageCoord_[0], kernelImageCoord_[1]);
+        srcTri[1] = new Point(kernelImageCoord_[0], kernelImageCoord_[3]);
+        srcTri[2] = new Point(kernelImageCoord_[2], kernelImageCoord_[3]);
         
         Point[] dstTri = new Point[3];
         dstTri[0] = new Point(kernelReal_[0][0], kernelReal_[0][1]);
-        dstTri[1] = new Point(kernelReal_[0][1], kernelReal_[1][0]);
+        dstTri[1] = new Point(kernelReal_[0][0], kernelReal_[1][1]);
         dstTri[2] = new Point(kernelReal_[1][0], kernelReal_[1][1]);
 
-        afMat = Imgproc.getAffineTransform(new MatOfPoint2f(srcTri), new MatOfPoint2f(srcTri));
+        afMat = Imgproc.getAffineTransform(new MatOfPoint2f(srcTri), new MatOfPoint2f(dstTri));
         return afMat;
     }
 }

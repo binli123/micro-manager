@@ -58,6 +58,7 @@ public class RoiMappingFrame extends MMDialog {
     private JTextField imagePostText_;
     private JTextField kernelSizeText_;
     private int[] roiCoordinates_ = {0, 0, 0, 0};
+    private int[] kernelImagePosition = {0, 0, 0, 0};
     private double[][] kernelReal_ = {{0, 0, 0}, {0, 0, 0}};
     private static String ROICOORDINATES = "(0, 0) (0, 0)";
     private static String KERNELCENTER = "(0, 0)";
@@ -71,6 +72,9 @@ public class RoiMappingFrame extends MMDialog {
     private byte[][] kerneldata_;
     private int[][] kernelRealPosition;
     private int kernelSize_ = 3;
+    private int kernelCols = 0;
+    private int kernelRows = 0;
+    private double bestScale = 0;
     private ArrayList<Point> matchLocations = new ArrayList();
     private ArrayList<Double> scales = new ArrayList<Double>();
     private Point bestPosition = null;
@@ -216,8 +220,12 @@ public class RoiMappingFrame extends MMDialog {
                 scales = tm.findMatch(image, kernelImage);
                 matchLocations = tm.getMatchPositions();
                 bestPosition = findBestMatch(tm, kc);
-                // kernelRealPosition = ctm.getKernelStartEnd(stagePosList_, kernelSize_, stagePos);
-                // afMat = ctm.getTransformMatrix(roiCoordinates_, kernelRealPosition);
+                kernelRealPosition = ctm.getKernelStartEnd(stagePosList_, kernelSize_, stagePos);
+                kernelCols = (int) (kernelImage.cols() * bestScale);
+                kernelRows = (int) (kernelImage.rows() * bestScale);
+                kernelImagePosition = ctm.getKernelImgCoords(bestPosition, kernelCols, kernelRows);
+                afMat = ctm.getTransformMatrix(kernelImagePosition, kernelRealPosition);
+                System.out.println(afMat.dump());
             }
         });
         add(correlationButton, "wrap");
@@ -300,7 +308,8 @@ public class RoiMappingFrame extends MMDialog {
             disAve = disSum / goodMatches.size();
             if(minDis == 0 || disAve < minDis) {
                 minDis = disAve;
-                bestMatchPosition = matchLocations.get(i); 
+                bestMatchPosition = matchLocations.get(i);
+                bestScale = scales.get(i);
             }
         }
         return bestMatchPosition;    
