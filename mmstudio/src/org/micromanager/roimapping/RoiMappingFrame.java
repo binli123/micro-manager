@@ -198,7 +198,7 @@ public class RoiMappingFrame extends MMDialog {
                 kernel_ = sk.snapImages(stagePosList_);
                 kerneldata_ = sk.getKernelImage(kernel_, kernelSize_);
                 sk.displayKernel(kerneldata_);
-                kernelImage = tm.readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 02 greyscale.tif");  
+                kernelImage = tm.readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01 greyscale.tif");  
             }
         });
         add(snapButton);
@@ -215,7 +215,7 @@ public class RoiMappingFrame extends MMDialog {
                 matchLocations.clear();                              
                 scales = tm.findMatch(image, kernelImage);
                 matchLocations = tm.getMatchPositions();
-                // bestPosition = findBestMatch(tm, kc);
+                bestPosition = findBestMatch(tm, kc);
                 // kernelRealPosition = ctm.getKernelStartEnd(stagePosList_, kernelSize_, stagePos);
                 // afMat = ctm.getTransformMatrix(roiCoordinates_, kernelRealPosition);
             }
@@ -279,6 +279,7 @@ public class RoiMappingFrame extends MMDialog {
         TemplateMatching tm = tm_;
         int numOfLocations = 0;
         int numOfGoodMatches = 0;
+        double minDis = 0;
         Point bestMatchPosition = null;
         // matchLocations = tm.getMatchPositions();
         // scales = tm.getMatchScales();
@@ -290,10 +291,16 @@ public class RoiMappingFrame extends MMDialog {
             croppedImage = kc.cropImageFromKernel(image, kernelImage, 
                     scales.get(i), matchLocations.get(i));
             goodMatches = kc.findMatch(scales.get(i), kernelImage, croppedImage);
-            // find the candidate template matching with the most goood matches
-            if(goodMatches.size()>numOfGoodMatches) {
-                numOfGoodMatches = goodMatches.size();
-                bestMatchPosition = matchLocations.get(i);                
+            // find the candidate template matching with the smallest average distance
+            double disSum = 0;
+            double disAve = 0;
+            for(int j = 0; j < goodMatches.size(); j++) {
+                disSum = goodMatches.get(j).distance + disSum;
+            }
+            disAve = disSum / goodMatches.size();
+            if(minDis == 0 || disAve < minDis) {
+                minDis = disAve;
+                bestMatchPosition = matchLocations.get(i); 
             }
         }
         return bestMatchPosition;    
