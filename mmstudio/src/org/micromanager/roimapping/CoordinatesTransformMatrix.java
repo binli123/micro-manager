@@ -10,6 +10,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.micromanager.StagePosition;
 import org.micromanager.Studio;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -83,10 +85,25 @@ public class CoordinatesTransformMatrix {
         return afMat;
     }
     
-    public int[][] mapToStage() {
+    public int[][] mapToStage(Mat afMat, int[] roiCoordinates) {
         int[][] roiRealPosition = {{0, 0, 0}, {0, 0, 0}};
+        Mat roiStart = new Mat(3, 1, CvType.CV_64F);
+        Mat roiEnd = new Mat(3, 1, CvType.CV_64F);
+        Mat realStart = new Mat(2, 1, CvType.CV_64F);
+        Mat realEnd = new Mat(2, 1, CvType.CV_64F);
         
-        
+        roiStart.put(0, 0, 
+                new double[] {roiCoordinates[0], roiCoordinates[1], 1});
+        roiEnd.put(0, 0, 
+                new double[] {roiCoordinates[2], roiCoordinates[3], 1});
+        // System.out.println(roiStart.dump());
+        Core.gemm(afMat, roiStart, 1, new Mat(), 0, realStart);
+        Core.gemm(afMat, roiEnd, 1, new Mat(), 0, realEnd); 
+
+        roiRealPosition[0][0] = (int) realStart.get(0, 0)[0];
+        roiRealPosition[0][1] = (int) realStart.get(1, 0)[0];
+        roiRealPosition[1][0] = (int) realEnd.get(0, 0)[0];
+        roiRealPosition[1][1] = (int) realEnd.get(1, 0)[0];
         
         return roiRealPosition;
     }

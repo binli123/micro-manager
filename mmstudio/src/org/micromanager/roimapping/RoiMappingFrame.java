@@ -37,6 +37,7 @@ import org.micromanager.utils.MMDialog;
 import org.micromanager.utils.MMException;
 import org.micromanager.utils.MMScriptException;
 import org.micromanager.utils.ReportingUtils;
+import org.opencv.core.CvType;
 import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -54,6 +55,7 @@ public class RoiMappingFrame extends MMDialog {
     private static File lowResImage;
     private JTextField userText_;
     private JTextField coordinatesText_;
+    private JTextField positionsText_;
     private JTextField stagePosText_;
     private JTextField imagePostText_;
     private JTextField kernelSizeText_;
@@ -61,6 +63,7 @@ public class RoiMappingFrame extends MMDialog {
     private int[] kernelImagePosition = {0, 0, 0, 0};
     private double[][] kernelReal_ = {{0, 0, 0}, {0, 0, 0}};
     private static String ROICOORDINATES = "(0, 0) (0, 0)";
+    private static String ROIREALPOSITIONS = "(0, 0) (0, 0)";
     private static String KERNELCENTER = "(0, 0)";
     private static String KERNELIMAGECENTER = "(0, 0)";
     private double[] stagePos = {0, 0, 0};
@@ -71,7 +74,8 @@ public class RoiMappingFrame extends MMDialog {
     private Mat afMat;
     private byte[][] kerneldata_;
     private int[][] kernelRealPosition;
-    private int kernelSize_ = 3;
+    private int[][] roiRealPosition;
+    private int kernelSize_ = 5;
     private int kernelCols = 0;
     private int kernelRows = 0;
     private double bestScale = 0;
@@ -139,46 +143,7 @@ public class RoiMappingFrame extends MMDialog {
                 }
             }
         });
-        add(loadImageButton, "wrap");
-        
-        // display the image coordinates of ROI
-        add(new JLabel("ROI Coordinates: "), "wrap");
-        coordinatesText_ = new JTextField(30);
-        coordinatesText_.setText(ROICOORDINATES);
-        add(coordinatesText_, "split 2");
-        
-        // will update image coordiates of a selected ROI
-        JButton annotateButton = new JButton("Annotate Image");
-        annotateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Set ROI
-                // Record the coordinates of ROI
-                ia.setROI();
-                try {
-                    roiCoordinates_[0] = ia.getAnnotationROI().x;
-                    roiCoordinates_[1] = ia.getAnnotationROI().y;
-                    roiCoordinates_[2] = ia.getAnnotationROI().x + 
-                            ia.getAnnotationROI().width;
-                    roiCoordinates_[3] = ia.getAnnotationROI().y + 
-                            ia.getAnnotationROI().height;;
-                } catch(MMScriptException ex) {
-                    // ReportingUtils.showError(ex, "Failed to annotate image");
-                } catch(Exception ex) {
-                    Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                ROICOORDINATES = String.format("(%d, %d) (%d, %d)", 
-                        roiCoordinates_[0], roiCoordinates_[1], 
-                        roiCoordinates_[2], roiCoordinates_[3]);
-                coordinatesText_.setText(ROICOORDINATES);
-                try {
-                   studio_.getCMMCore().clearROI();
-                } catch(Exception ex) {
-                   Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        });
-        add(annotateButton, "wrap");        
+        add(loadImageButton, "wrap");        
         
         JButton centerKernelButton = new JButton("Center Kernel");
         centerKernelButton.addActionListener(new ActionListener() {
@@ -215,6 +180,7 @@ public class RoiMappingFrame extends MMDialog {
                 // kc.loadArrayAsMat(kerneldata_);
                 // kc.findMatch();
                 // kernelImage = tm.loadArrayAsMat(kerneldata_);
+                afMat = new Mat(2, 3, CvType.CV_64F);
                 scales.clear();
                 matchLocations.clear();                              
                 scales = tm.findMatch(image, kernelImage);
@@ -225,7 +191,7 @@ public class RoiMappingFrame extends MMDialog {
                 kernelRows = (int) (kernelImage.rows() * bestScale);
                 kernelImagePosition = ctm.getKernelImgCoords(bestPosition, kernelCols, kernelRows);
                 afMat = ctm.getTransformMatrix(kernelImagePosition, kernelRealPosition);
-                // System.out.println(afMat.dump());
+                System.out.println(afMat.dump());
             }
         });
         add(correlationButton, "wrap");
@@ -268,6 +234,68 @@ public class RoiMappingFrame extends MMDialog {
         imagePostText_ = new JTextField(17);
         imagePostText_.setText(KERNELIMAGECENTER);
         add(imagePostText_, "wrap"); 
+        
+        // display the image coordinates of ROI
+        add(new JLabel("ROI Image Coordinates: "), "wrap");
+        coordinatesText_ = new JTextField(30);
+        coordinatesText_.setText(ROICOORDINATES);
+        add(coordinatesText_, "split 2");
+        
+        // will update image coordiates of a selected ROI
+        JButton annotateButton = new JButton("Annotate Image");
+        annotateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Set ROI
+                // Record the coordinates of ROI
+                ia.setROI();
+                try {
+                    roiCoordinates_[0] = ia.getAnnotationROI().x;
+                    roiCoordinates_[1] = ia.getAnnotationROI().y;
+                    roiCoordinates_[2] = ia.getAnnotationROI().x + 
+                            ia.getAnnotationROI().width;
+                    roiCoordinates_[3] = ia.getAnnotationROI().y + 
+                            ia.getAnnotationROI().height;;
+                } catch(MMScriptException ex) {
+                    // ReportingUtils.showError(ex, "Failed to annotate image");
+                } catch(Exception ex) {
+                    Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                ROICOORDINATES = String.format("(%d, %d) (%d, %d)", 
+                        roiCoordinates_[0], roiCoordinates_[1], 
+                        roiCoordinates_[2], roiCoordinates_[3]);
+                coordinatesText_.setText(ROICOORDINATES);
+                try {
+                   studio_.getCMMCore().clearROI();
+                } catch(Exception ex) {
+                   Logger.getLogger(RoiMappingFrame.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
+        add(annotateButton, "wrap");
+        
+        add(new JLabel("ROI real Position: "), "wrap");
+        positionsText_ = new JTextField(30);
+        positionsText_.setText(ROIREALPOSITIONS);
+        add(positionsText_, "split 2");
+        
+        JButton mapButton = new JButton("      Map ROI      ");
+        mapButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {                
+                //afMat.put(0, 0, new double[] {2.353846153846155, 0, -2139.646153846155, 
+                //    0, 2.353846153846154, -3502.523076923077});
+                // System.out.println(afMat.dump());
+                roiRealPosition = ctm.mapToStage(afMat, roiCoordinates_);
+                ROIREALPOSITIONS = String.format("(%d, %d) (%d, %d)", 
+                        roiRealPosition[0], roiRealPosition[1], 
+                        roiRealPosition[2], roiRealPosition[3]);
+                positionsText_.setText(ROIREALPOSITIONS);
+            }
+        });
+        add(mapButton, "span 2");
+        
+        
         
         
         pack();
