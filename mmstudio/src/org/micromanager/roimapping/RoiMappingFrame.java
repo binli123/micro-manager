@@ -167,7 +167,7 @@ public class RoiMappingFrame extends MMDialog {
                 kernel_ = sk.snapImages(stagePosList_);
                 kerneldata_ = sk.getKernelImage(kernel_, kernelSize_);
                 sk.displayKernel(kerneldata_);
-                kernelImage = tm.readImage("C:/Users/MuSha/Desktop/Image Data/Images/High resolution image 01 greyscale.tif");  
+                kernelImage = tm.readImage("C:/Users/MuSha/Desktop/Image Data/Images/Test2/12-PCPK-107-10-green-high.tif");  
             }
         });
         add(snapButton);
